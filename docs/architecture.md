@@ -178,4 +178,61 @@ Provides:
 All five domain models (Tenant, Project, ShapeTemplate, GeometryModel, Package)
 inherit from BaseDomainModel.
 
+## Geometry Primitive Layer
+
+Pure Pydantic value objects (`geometry/primitives.py`).
+No rendering, no SVG, no PDF — data only.
+
+| Primitive       | Purpose                                              |
+|---|---|
+| Point           | 2-D coordinate (x, y); foundation for all others    |
+| Line            | Segment between two Points; has `.length` property  |
+| Rectangle       | Axis-aligned box; has `.area`, `.perimeter`, `.edges`, `.corners`, `.center` |
+| Circle          | Centre + radius; has `.area`, `.circumference`       |
+| Polyline        | Ordered Point sequence; closed flag; has `.segments`, `.total_length` |
+| DimensionLine   | Annotated measurement callout between two Points    |
+| TextAnnotation  | Free-text label anchored at a Point                 |
+
+All primitives carry: UUID id, optional label, extensible metadata Dict.
+
+## Shape Library
+
+Seed templates (`geometry/shapes.py`) are system-level templates
+(tenant_id=None) available to all tenants.
+
+`SHAPE_REGISTRY` maps shape_type slug → ShapeTemplate instance.
+
+MVP shapes:
+    rectangle         → implemented
+    island            → stub (future)
+    vanity            → stub (future)
+    straight_kitchen  → stub (future)
+    l_kitchen         → stub (future)
+
+## Geometry Builder (`services/geometry_builder.py`)
+
+Converts ResolvedDimensions → GeometryModel + geometry primitives.
+
+```
+TemplateResolver → ResolvedDimensions
+                        ↓
+                GeometryBuilder
+                        ↓
+            GeometryBuildResult
+                ├── GeometryModel   (status=computed, pieces=[...])
+                ├── List[Rectangle]
+                ├── List[DimensionLine]
+                └── List[TextAnnotation]
+```
+
+Shape dispatch:
+- `_DISPATCH` dict maps shape_type slug → handler method
+- Handler selected by inspecting template name / metadata / category
+- Adding a new shape = write handler + add to `_DISPATCH`
+
+Exceptions:
+    GeometryBuildError    – generic build failure (e.g. error result passed in)
+    UnsupportedShapeError – no handler registered for shape_type
+
+
 
