@@ -51,3 +51,48 @@ Manufacturer Package
 5. Shared Schema
 
 Future compatibility with StoneDesk.
+
+## Infrastructure Strategy
+
+Initial deployment approach:
+
+Platform will be deployed fully on GCP.
+
+Technology stack:
+
+* Frontend: React / Vite
+* Backend: FastAPI
+* Hosting: GCP Cloud Run
+* Database: Cloud SQL (Postgres)
+* File Storage: Cloud Storage
+* Secrets: Secret Manager
+
+Deployment philosophy:
+
+* Single-cloud strategy (GCP-only)
+* Simple operational model
+* Demo-ready reliability
+* Future SaaS scalability
+* Supports multi-tenant architecture
+
+Development approach:
+
+Phase 1:
+
+* Local development
+* GitHub source control
+
+Phase 2:
+
+* Deploy backend to Cloud Run
+* Add Cloud SQL
+
+Phase 3:
+
+* Add Cloud Storage for generated PDFs, uploads, and shape assets.
+
+Long-term goals:
+
+* Multi-tenant B2B SaaS support
+* Customer domain / white-label readiness
+* Future interoperability with StoneDesk ecosystem
