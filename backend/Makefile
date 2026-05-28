@@ -1,4 +1,4 @@
-.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres cloud-build cloud-run-local deploy-gcp
+.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres cloud-build cloud-run-local deploy-gcp check-health cloud-logs
 
 run:
 	uvicorn app.main:app --reload --port 8000
@@ -36,3 +36,11 @@ cloud-run-local:
 
 deploy-gcp:
 	./scripts/deploy.sh
+
+check-health:
+	@echo "Checking Cloud Run Health (ensure CLOUD_RUN_URL is set or defaults to localhost)..."
+	curl -s $${CLOUD_RUN_URL:-http://localhost:8000}/api/v1/health | python -m json.tool
+
+cloud-logs:
+	@echo "Fetching recent Cloud Run logs..."
+	gcloud run services logs read builddesk-api --region us-central1 --limit 50

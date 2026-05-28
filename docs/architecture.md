@@ -458,15 +458,22 @@ The FastAPI application operates completely stateless, meeting Cloud Run's requi
 - It binds dynamically to the `$PORT` environment variable provided by GCP.
 - Liveness and readiness probes rely on the `GET /api/v1/health` endpoint, which verifies the application version and `database` connectivity status explicitly.
 - The `lifespan` startup hook ensures a graceful boot and database verification before accepting traffic.
+- Post-deployment validation is codified in `docs/deployment-checklist.md` to ensure Tenant isolation and DB connectivity function in the cloud environment.
 
 ### GCP Deployment Workflow
-Deployment to GCP is automated via `gcloud` and Cloud Build. We support a direct deployment shell script (`backend/scripts/deploy.sh`) and a structured `cloudbuild.yaml` file.
+Deployment to GCP is automated via `gcloud` and Cloud Build. Detailed setup instructions are maintained in `docs/gcp-setup.md`. We support a direct deployment shell script (`backend/scripts/deploy.sh`) and a structured `cloudbuild.yaml` file.
 ```bash
 make deploy-gcp
 ```
 or
 ```bash
 make cloud-build
+```
+
+You can validate deployments using the CLI helpers:
+```bash
+make check-health CLOUD_RUN_URL=https://builddesk-api-...
+make cloud-logs
 ```
 
 ### Artifact Registry Strategy

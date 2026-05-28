@@ -94,10 +94,16 @@ Completed:
   ✓ scripts/deploy.sh automation script added
   ✓ Makefile helpers (`cloud-build`, `cloud-run-local`, `deploy-gcp`) added
 
+✓ Live GCP Deployment Validation Layer v1
+  ✓ docs/gcp-setup.md created (APIs, AR, Secret Manager)
+  ✓ docs/deployment-checklist.md created (Health, Export, Tenant validation)
+  ✓ Makefile extended with `check-health` and `cloud-logs`
+  ✓ Verified /health endpoint suitability for Cloud Run probes
+
 Total smoke tests: 110 / 110 passing (1 skipped due to docker pull).
 
 Next:
 
 □ Async Engine Migration (asyncpg)
-□ JWT Authentication / AuthZ
+□ Cloud SQL Integration
 □ Frontend React integration
