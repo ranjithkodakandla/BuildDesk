@@ -14,13 +14,14 @@ Completed:
 ✓ Geometry Primitive Layer
   ✓ Point, Line, Rectangle, Circle, Polyline, DimensionLine, TextAnnotation
 ✓ Shape Library Seeds
-  ✓ RECTANGLE_TEMPLATE + ISLAND_TEMPLATE
-  ✓ SHAPE_REGISTRY: {"rectangle", "island"}
+  ✓ RECTANGLE_TEMPLATE + ISLAND_TEMPLATE + VANITY_TEMPLATE
+  ✓ SHAPE_REGISTRY: {"rectangle", "island", "vanity"}
 ✓ Geometry Builder — refactored + extended
   ✓ GeometryBuildResult: rectangles, polylines, lines, circles, dimension_lines, annotations
   ✓ Rectangle handler — 10 smoke tests passing
   ✓ Island handler — 15 smoke tests passing
-  ✓ Stubs: vanity, straight_kitchen, l_kitchen
+  ✓ Vanity handler — 10 smoke tests passing (Construction rules, open polylines, circles)
+  ✓ Stubs: straight_kitchen, l_kitchen
 ✓ GeometryModel: optional metadata Dict
 ✓ REST API Layer v1 — 10 API smoke tests passing
   ✓ GET  /api/v1/shapes
@@ -35,16 +36,17 @@ Completed:
 ✓ Preview / Export Convenience Layer — 10 smoke tests passing
   ✓ GET /api/v1/demo/rectangle  (hardcoded 96" × 26" countertop)
   ✓ GET /api/v1/demo/island     (hardcoded 72" × 36" island)
+  ✓ GET /api/v1/demo/vanity     (hardcoded 48" × 22" vanity with sink)
   ✓ X-BuildDesk-Demo header on all demo responses
-  ✓ tools/generate_demo_svg.py CLI (rectangle, island, all)
+  ✓ tools/generate_demo_svg.py CLI (rectangle, island, vanity, all)
   ✓ Saved artifacts: tests/output/rectangle_demo.svg
                      tests/output/island_demo.svg
+                     tests/output/vanity_demo.svg
 
-Total smoke tests: 66 / 66 passing.
+Total smoke tests: 76 / 76 passing.
 
 Next:
 
-□ Implement Vanity shape handler + template
 □ Implement L-Kitchen shape handler (two-piece polyline)
 □ GET /api/v1/geometry/{id} (requires persistence)
 □ Tenant-scoped DB sessions (Phase 2 — Cloud SQL)

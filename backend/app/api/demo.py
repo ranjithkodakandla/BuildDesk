@@ -6,6 +6,7 @@ Browser-accessible demo endpoints — no request body required.
 Endpoints:
     GET /api/v1/demo/rectangle   → SVG of a standard 96" × 26" countertop
     GET /api/v1/demo/island      → SVG of a standard 72" × 36" island
+    GET /api/v1/demo/vanity      → SVG of a standard 48" × 22" vanity with sink
 
 Purpose:
     Frictionless demo path. Open a URL in a browser and immediately see
@@ -54,6 +55,15 @@ _DEMO_PAYLOADS = {
         "thickness": 0.75,
         "corner_radius": 2.0,
         "label": "Kitchen Island",
+    },
+    "vanity": {
+        "length": 48.0,
+        "width": 22.0,
+        "thickness": 0.75,
+        "backsplash_height": 4.0,
+        "sink_cutout": True,
+        "sink_diameter": 12.0,
+        "label": "Bathroom Vanity",
     },
 }
 
@@ -121,3 +131,23 @@ def demo_rectangle() -> Response:
 def demo_island() -> Response:
     """Render the island demo SVG inline."""
     return _svg_response("island")
+
+
+# ---------------------------------------------------------------------------
+# GET /demo/vanity
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/demo/vanity",
+    summary="Vanity demo drawing",
+    description=(
+        "Returns a pre-built SVG of a standard 48\" × 22\" bathroom vanity "
+        "with a 4\" backsplash and a 15\" sink cutout. "
+        "Open directly in a browser — no request body required."
+    ),
+    responses={200: {"content": {"image/svg+xml": {}}, "description": "Demo SVG"}},
+    status_code=200,
+)
+def demo_vanity() -> Response:
+    """Render the vanity demo SVG inline."""
+    return _svg_response("vanity")

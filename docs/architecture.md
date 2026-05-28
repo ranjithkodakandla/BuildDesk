@@ -205,7 +205,7 @@ Seed templates (`geometry/shapes.py`) are system-level templates
 MVP shapes:
     rectangle         → implemented
     island            → implemented
-    vanity            → stub (future)
+    vanity            → implemented
     straight_kitchen  → stub (future)
     l_kitchen         → stub (future)
 
@@ -236,6 +236,22 @@ TemplateResolver → ResolvedDimensions
 - 4 `DimensionLine`s are emitted — one per side — reflecting all-edge accessibility.
 - `corner_radius` is carried in `GeometryModel.metadata` for future rounded-corner
   rendering by the PDF/SVG engine.
+
+### Vanity shape & Construction Rules
+
+- Represents the first shape with wall-mounting construction logic.
+- The back edge sits flush against a wall. It is therefore omitted from the geometric outline (an **open Polyline** is used).
+- This explicitly signals to output engines that edge-profiling or finishing should NOT be applied to the back edge.
+- Emits exactly 3 `DimensionLine`s (left, right, front).
+- Includes an optional `Circle` primitive if a `sink_cutout` is requested, triggering geometric validation (sink must fit within slab dimensions).
+- `GeometryModel.metadata` records these construction details:
+  ```json
+  {
+      "exposed_edges": ["front", "left", "right"],
+      "wall_edge": "back",
+      "has_backsplash": true
+  }
+  ```
 
 Shape dispatch:
 - `_DISPATCH` dict maps shape_type slug → handler method

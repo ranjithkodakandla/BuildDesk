@@ -457,8 +457,210 @@ class GeometryBuilder:
     # ── Future shape stubs ──────────────────────────────────────────────
     # ------------------------------------------------------------------
 
-    def _build_vanity(self, template, dims, project_id, tenant_id):
-        raise UnsupportedShapeError("Vanity shape handler not yet implemented.")
+    def _build_vanity(
+        self,
+        template: ShapeTemplate,
+        dims: Dict[str, Any],
+        project_id: uuid.UUID,
+        tenant_id: uuid.UUID,
+    ) -> GeometryBuildResult:
+        """
+        Build geometry for a wall-mounted bathroom vanity countertop.
+
+        Construction rules:
+            - Back edge sits flush against the wall → NOT exposed, NOT finished.
+            - Front, left, and right edges are exposed and finished.
+            - The outline is an OPEN Polyline (closed=False) tracing the 3
+              exposed edges only: left-back → left-front → right-front → right-back.
+              The wall edge (back) is omitted from the outline.
+
+        Required parameters:
+            length          – horizontal span (inches)
+            width           – front-to-back depth (inches)
+
+        Optional parameters:
+            thickness       – slab thickness; default 0.75"
+            backsplash_height – height of integrated backsplash; 0 = none
+            sink_cutout     – boolean; if true, adds a Circle at the centre
+            sink_diameter   – diameter of the sink cutout; default 15"
+            label           – piece name override
+
+        Validation:
+            If sink_cutout=True, sink_diameter must fit within the vanity
+            (diameter ≤ min(length, width) − 4" clearance).
+
+        Produces:
+            - 1 GeometryPiece (full slab)
+            - 1 open Polyline (3 exposed edges, wall back omitted)
+            - 1 Rectangle (bounding box)
+            - 3 DimensionLines: length (front), width left, width right
+            - 1 TextAnnotation (piece label at centre)
+            - 1 TextAnnotation (backsplash note, if backsplash_height > 0)
+            - 1 Circle (sink cutout, if sink_cutout=True)
+        """
+        length           = float(dims["length"])
+        width            = float(dims["width"])
+        thickness        = float(dims.get("thickness", 0.75))
+        backsplash_h     = float(dims.get("backsplash_height", 0.0))
+        sink_cutout_flag = bool(dims.get("sink_cutout", False))
+        sink_diameter    = float(dims.get("sink_diameter", 15.0))
+        label            = str(dims.get("label", template.name))
+
+        area      = length * width
+        # Perimeter counts 3 exposed edges (wall back is not edged/finished)
+        perimeter = length + 2 * width
+
+        # ── Sink diameter validation ─────────────────────────────────────
+        if sink_cutout_flag:
+            clearance   = 4.0   # minimum stone remaining on each side
+            max_allowed = min(length, width) - 2 * clearance
+            if sink_diameter > max_allowed:
+                raise GeometryBuildError(
+                    f"sink_diameter {sink_diameter}\" exceeds safe maximum "
+                    f"{max_allowed:.1f}\" for a {length}\" × {width}\" vanity "
+                    f"(clearance = {clearance}\" per side)."
+                )
+
+        # ── GeometryPiece ─────────────────────────────────────────────────
+        notes_parts = [f"Vanity slab: {length}\" × {width}\" × {thickness}\"."]
+        notes_parts.append("Exposed edges: front, left, right. Wall back: flush/unfinished.")
+        if backsplash_h:
+            notes_parts.append(f"Integrated backsplash: {backsplash_h}\" height.")
+        if sink_cutout_flag:
+            notes_parts.append(f"Sink cutout: ⌀{sink_diameter}\" centred.")
+
+        piece = GeometryPiece(
+            label=label,
+            width=width,
+            length=length,
+            thickness=thickness,
+            area=area,
+            notes=" ".join(notes_parts),
+        )
+
+        # ── GeometryModel ─────────────────────────────────────────────────
+        geometry = GeometryModel(
+            project_id=project_id,
+            tenant_id=tenant_id,
+            template_id=template.template_id,
+            dimensions=dict(dims),
+            status=GeometryStatus.computed,
+            pieces=[piece],
+            computed_area=area,
+            computed_perimeter=perimeter,
+            metadata={
+                # ── Construction rules ────────────────────────────────────
+                "exposed_edges":  ["front", "left", "right"],
+                "wall_edge":      "back",
+                "wall_edge_note": "Flush against wall; no edge profile required.",
+                # ── Options ───────────────────────────────────────────────
+                "backsplash_height": backsplash_h,
+                "has_backsplash":    backsplash_h > 0,
+                "sink_cutout":       sink_cutout_flag,
+                "sink_diameter":     sink_diameter if sink_cutout_flag else None,
+            },
+        )
+
+        # ── Open Polyline outline — 3 exposed edges ───────────────────────
+        # Tracing BL → TL (left edge) → TR (front→right) → BR (right edge)
+        # Note: 'top' in geometry coords = front of vanity (y=width)
+        #        'bottom' in geometry coords = back wall (y=0)
+        #
+        # Outline: back-left → front-left → front-right → back-right
+        # (3 line segments, wall edge NOT drawn)
+        outline = Polyline(
+            points=[
+                Point(x=0.0,    y=0.0),    # back-left   (wall corner)
+                Point(x=0.0,    y=width),  # front-left  (exposed)
+                Point(x=length, y=width),  # front-right (exposed)
+                Point(x=length, y=0.0),    # back-right  (wall corner)
+            ],
+            closed=False,   # open path — wall edge intentionally omitted
+            label=f"{label} outline (3 exposed edges)",
+            metadata={
+                "edge_type":      "partial_exposed",
+                "exposed_edges":  ["left", "front", "right"],
+                "omitted_edge":   "back (wall)",
+            },
+        )
+
+        # ── Bounding Rectangle ────────────────────────────────────────────
+        rect = Rectangle(
+            origin=Point(x=0.0, y=0.0),
+            width=length,
+            height=width,
+            label=label,
+            metadata={"role": "bounding_box"},
+        )
+
+        # ── 3 DimensionLines ──────────────────────────────────────────────
+        # Front edge (length, horizontal) — front of vanity = top (y=width)
+        dim_front = DimensionLine(
+            start=Point(x=0.0,    y=width),
+            end=  Point(x=length, y=width),
+            value=length, unit="in", label=f"{length}\"",
+            offset=1.0,   # push above the front edge
+        )
+        # Left edge (width, vertical)
+        dim_left = DimensionLine(
+            start=Point(x=0.0, y=0.0),
+            end=  Point(x=0.0, y=width),
+            value=width, unit="in", label=f"{width}\"",
+            offset=-1.0,
+        )
+        # Right edge (width, vertical)
+        dim_right = DimensionLine(
+            start=Point(x=length, y=0.0),
+            end=  Point(x=length, y=width),
+            value=width, unit="in", label=f"{width}\"",
+            offset=1.0,
+        )
+
+        # ── TextAnnotation — piece label at centre ─────────────────────────
+        centre = rect.center
+        annotation = TextAnnotation(
+            position=centre,
+            text=label,
+            font_size=14.0,
+            bold=True,
+            label="piece_label",
+        )
+
+        # ── Optional backsplash annotation ───────────────────────────────
+        annotations = [annotation]
+        if backsplash_h > 0:
+            bs_ann = TextAnnotation(
+                position=Point(x=length / 2, y=-backsplash_h / 2),
+                text=f"Backsplash: {backsplash_h}\" H",
+                font_size=10.0,
+                bold=False,
+                label="backsplash_note",
+                metadata={"backsplash_height": backsplash_h},
+            )
+            annotations.append(bs_ann)
+
+        # ── Optional sink cutout circle ───────────────────────────────────
+        circles: List[Circle] = []
+        if sink_cutout_flag:
+            sink_circle = Circle(
+                center=centre,
+                radius=sink_diameter / 2,
+                label=f"Sink ⌀{sink_diameter}\"",
+                metadata={
+                    "cutout_type": "undermount_sink",
+                    "diameter":    sink_diameter,
+                },
+            )
+            circles.append(sink_circle)
+
+        return GeometryBuildResult(
+            geometry=geometry,
+            rectangles=[rect],
+            polylines=[outline],
+            dimension_lines=[dim_front, dim_left, dim_right],
+            annotations=annotations,
+            circles=circles,
+        )
 
     def _build_straight_kitchen(self, template, dims, project_id, tenant_id):
         raise UnsupportedShapeError("Straight kitchen shape handler not yet implemented.")

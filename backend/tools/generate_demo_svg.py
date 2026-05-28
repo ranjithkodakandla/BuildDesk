@@ -54,6 +54,15 @@ _DEMO_PAYLOADS: dict[str, dict] = {
         "corner_radius": 2.0,
         "label": "Kitchen Island",
     },
+    "vanity": {
+        "length": 48.0,
+        "width": 22.0,
+        "thickness": 0.75,
+        "backsplash_height": 4.0,
+        "sink_cutout": True,
+        "sink_diameter": 12.0,
+        "label": "Bathroom Vanity",
+    },
 }
 
 _DEMO_PROJECT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
