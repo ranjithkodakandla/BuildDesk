@@ -165,5 +165,6 @@ def create_geometry(request: GeometryRequest) -> GeometryResponse:
         pieces=pieces,
         rectangles=rectangles,
         dimension_lines=dimension_lines,
+        metadata=g.metadata,
         schema_version=g.schema_version,
     )

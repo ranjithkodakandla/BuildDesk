@@ -233,10 +233,15 @@ class SvgExporter:
         y1 = self._sy(line.start.y, svg_h, dy)
         x2 = self._sx(line.end.x)
         y2 = self._sy(line.end.y, svg_h, dy)
+        
+        dash = ""
+        if "stroke_dasharray" in line.metadata:
+            dash = f' stroke-dasharray="{line.metadata["stroke_dasharray"]}"'
+
         return (
             f'<line x1="{x1:.2f}" y1="{y1:.2f}" '
             f'x2="{x2:.2f}" y2="{y2:.2f}" '
-            f'stroke="{_COL_STROKE}" stroke-width="1.5" />'
+            f'stroke="{_COL_STROKE}" stroke-width="1.5"{dash} />'
         )
 
     def _render_circle(self, circle: Circle, svg_h: float, dy: float) -> str:

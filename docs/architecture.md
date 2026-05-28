@@ -206,7 +206,7 @@ MVP shapes:
     rectangle         → implemented
     island            → implemented
     vanity            → implemented
-    straight_kitchen  → stub (future)
+    straight_kitchen  → implemented
     l_kitchen         → stub (future)
 
 ## Geometry Builder (`services/geometry_builder.py`)
@@ -252,6 +252,16 @@ TemplateResolver → ResolvedDimensions
       "has_backsplash": true
   }
   ```
+
+### Straight Kitchen shape & Fabrication Rules
+
+- Represents the first shape with multi-piece fabrication logic (seams).
+- Like the vanity, the back edge sits flush against a wall (open `Polyline`).
+- Includes a greedy algorithm that automatically splits long runs (e.g. 180") into multiple `GeometryPiece` instances based on a `slab_max_length` (e.g. 120" max → 120" + 60" pieces).
+- Produces multiple `Rectangle` primitives (one for each physical piece).
+- Places a dashed `Line` primitive to visually indicate the seam location.
+- Emits specific `DimensionLine`s for each individual piece along the back edge, as well as an overall dimension along the front edge.
+- Emits `seam_count` in the `GeometryModel.metadata` and assigns each piece a specific `piece_num`.
 
 Shape dispatch:
 - `_DISPATCH` dict maps shape_type slug → handler method

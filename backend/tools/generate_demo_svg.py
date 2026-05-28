@@ -63,6 +63,15 @@ _DEMO_PAYLOADS: dict[str, dict] = {
         "sink_diameter": 12.0,
         "label": "Bathroom Vanity",
     },
+    "straight_kitchen": {
+        "length": 180.0,
+        "width": 26.0,
+        "thickness": 0.75,
+        "backsplash_height": 4.0,
+        "seam_enabled": True,
+        "slab_max_length": 120.0,
+        "label": "Main Kitchen Run",
+    },
 }
 
 _DEMO_PROJECT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")

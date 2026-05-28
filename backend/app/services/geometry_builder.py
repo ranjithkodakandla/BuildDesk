@@ -662,8 +662,189 @@ class GeometryBuilder:
             circles=circles,
         )
 
-    def _build_straight_kitchen(self, template, dims, project_id, tenant_id):
-        raise UnsupportedShapeError("Straight kitchen shape handler not yet implemented.")
+    def _build_straight_kitchen(
+        self,
+        template: ShapeTemplate,
+        dims: Dict[str, Any],
+        project_id: uuid.UUID,
+        tenant_id: uuid.UUID,
+    ) -> GeometryBuildResult:
+        """
+        Build geometry for a straight kitchen run, supporting multi-piece logic.
+
+        Construction rules:
+            - Back edge is flush against a wall (open polyline).
+            - Front, left, and right edges are exposed.
+        
+        Fabrication rules (Seam Logic):
+            - If length > slab_max_length and seam_enabled=True, the run is
+              divided into multiple slabs.
+            - Uses greedy splitting (e.g. 180" run with 120" max → 120" + 60").
+        """
+        length           = float(dims["length"])
+        width            = float(dims["width"])
+        thickness        = float(dims.get("thickness", 0.75))
+        backsplash_h     = float(dims.get("backsplash_height", 0.0))
+        seam_enabled     = bool(dims.get("seam_enabled", True))
+        slab_max_length  = float(dims.get("slab_max_length", 120.0))
+        base_label       = str(dims.get("label", template.name))
+
+        # ── Fabrication Seam Splitting ────────────────────────────────────
+        piece_lengths = []
+        if seam_enabled and length > slab_max_length:
+            rem = length
+            while rem > 0:
+                p_len = min(rem, slab_max_length)
+                piece_lengths.append(p_len)
+                rem -= p_len
+        else:
+            piece_lengths.append(length)
+
+        seam_count = len(piece_lengths) - 1
+
+        # ── Pieces & GeometryModel ────────────────────────────────────────
+        pieces = []
+        rectangles = []
+        lines = []
+        annotations = []
+        dim_lines = []
+
+        x_offset = 0.0
+        for i, p_len in enumerate(piece_lengths):
+            piece_num = i + 1
+            is_multi = len(piece_lengths) > 1
+            p_label = f"{base_label} - Part {piece_num}" if is_multi else base_label
+
+            piece = GeometryPiece(
+                label=p_label,
+                width=width,
+                length=p_len,
+                thickness=thickness,
+                area=p_len * width,
+                notes=f"Piece {piece_num} of {len(piece_lengths)}." if is_multi else "Single piece."
+            )
+            pieces.append(piece)
+
+            rect = Rectangle(
+                origin=Point(x=x_offset, y=0.0),
+                width=p_len,
+                height=width,
+                label=p_label,
+                metadata={"role": "piece", "piece_num": piece_num}
+            )
+            rectangles.append(rect)
+
+            annotations.append(TextAnnotation(
+                position=rect.center,
+                text=p_label,
+                font_size=12.0,
+                bold=True,
+                label="piece_label"
+            ))
+
+            # Dimension for this specific piece along the back edge
+            dim_lines.append(DimensionLine(
+                start=Point(x=x_offset, y=0.0),
+                end=Point(x=x_offset + p_len, y=0.0),
+                value=p_len, unit="in", label=f"{p_len}\"",
+                offset=-1.0,
+            ))
+
+            # Seam indicator
+            if i > 0:
+                seam_line = Line(
+                    start=Point(x=x_offset, y=0.0),
+                    end=Point(x=x_offset, y=width),
+                    label=f"Seam {i}",
+                    metadata={"line_type": "seam", "stroke_dasharray": "5,5"}
+                )
+                lines.append(seam_line)
+                
+                annotations.append(TextAnnotation(
+                    position=Point(x=x_offset, y=width / 2),
+                    text="SEAM",
+                    font_size=8.0,
+                    bold=False,
+                    label="seam_label"
+                ))
+
+            x_offset += p_len
+
+        # Overall GeometryModel
+        area      = length * width
+        perimeter = length + 2 * width
+
+        geometry = GeometryModel(
+            project_id=project_id,
+            tenant_id=tenant_id,
+            template_id=template.template_id,
+            dimensions=dict(dims),
+            status=GeometryStatus.computed,
+            pieces=pieces,
+            computed_area=area,
+            computed_perimeter=perimeter,
+            metadata={
+                "exposed_edges": ["front", "left", "right"],
+                "wall_edge": "back",
+                "has_backsplash": backsplash_h > 0,
+                "backsplash_height": backsplash_h,
+                "seam_enabled": seam_enabled,
+                "seam_count": seam_count,
+            },
+        )
+
+        # ── Overall Outline (Open Polyline) ───────────────────────────────
+        outline = Polyline(
+            points=[
+                Point(x=0.0,    y=0.0),
+                Point(x=0.0,    y=width),
+                Point(x=length, y=width),
+                Point(x=length, y=0.0),
+            ],
+            closed=False,
+            label=f"{base_label} overall outline",
+            metadata={"edge_type": "partial_exposed", "omitted_edge": "back (wall)"}
+        )
+
+        # ── Overall DimensionLines ────────────────────────────────────────
+        # Overall Front
+        dim_lines.append(DimensionLine(
+            start=Point(x=0.0, y=width),
+            end=Point(x=length, y=width),
+            value=length, unit="in", label=f"Overall: {length}\"",
+            offset=1.5,
+        ))
+        # Left edge
+        dim_lines.append(DimensionLine(
+            start=Point(x=0.0, y=0.0),
+            end=Point(x=0.0, y=width),
+            value=width, unit="in", label=f"{width}\"",
+            offset=-1.0,
+        ))
+        # Right edge
+        dim_lines.append(DimensionLine(
+            start=Point(x=length, y=0.0),
+            end=Point(x=length, y=width),
+            value=width, unit="in", label=f"{width}\"",
+            offset=1.0,
+        ))
+
+        if backsplash_h > 0:
+            annotations.append(TextAnnotation(
+                position=Point(x=length / 2, y=-backsplash_h / 2 - 1.0),
+                text=f"Backsplash: {backsplash_h}\" H",
+                font_size=10.0,
+            ))
+
+        return GeometryBuildResult(
+            geometry=geometry,
+            rectangles=rectangles,
+            polylines=[outline],
+            dimension_lines=dim_lines,
+            annotations=annotations,
+            lines=lines,
+            circles=[]
+        )
 
     def _build_l_kitchen(self, template, dims, project_id, tenant_id):
         raise UnsupportedShapeError("L-kitchen shape handler not yet implemented.")

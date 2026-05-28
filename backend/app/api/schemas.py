@@ -177,6 +177,7 @@ class GeometryResponse(BaseModel):
     pieces: List[GeometryPieceResponse]
     rectangles: List[RectangleResponse]
     dimension_lines: List[DimensionLineResponse]
+    metadata: Optional[Dict[str, Any]] = None
     schema_version: str
 
 

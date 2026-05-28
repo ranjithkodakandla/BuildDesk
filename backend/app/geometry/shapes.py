@@ -8,9 +8,9 @@ Shapes defined here:
     RECTANGLE_TEMPLATE  – simple rectangular countertop slab
     ISLAND_TEMPLATE     – kitchen island (all 4 edges exposed)
     VANITY_TEMPLATE     – wall-mounted bathroom vanity (3 edges exposed, optional sink)
+    STRAIGHT_KITCHEN_TEMPLATE – straight kitchen run (multi-piece support)
 
 Future shapes (not yet implemented):
-    STRAIGHT_KITCHEN_TEMPLATE
     L_KITCHEN_TEMPLATE
 
 These templates are system_template=True (available to all tenants).
@@ -238,10 +238,94 @@ VANITY_TEMPLATE = ShapeTemplate(
 )
 
 # ---------------------------------------------------------------------------
+# Straight Kitchen — long straight run with multi-piece / seam support
+# ---------------------------------------------------------------------------
+
+STRAIGHT_KITCHEN_TEMPLATE = ShapeTemplate(
+    name="Straight Kitchen",
+    category=ShapeCategory.kitchen,
+    system_template=True,
+    description=(
+        "Straight kitchen countertop run. Includes wall-mounting logic "
+        "(back edge flush) and fabrication logic: automatically divides "
+        "runs longer than slab_max_length into multiple pieces with seams."
+    ),
+    parameters=[
+        ShapeParameter(
+            name="length",
+            label="Length",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=12.0,
+            max_value=480.0,
+            required=True,
+            description="Total horizontal span of the kitchen run",
+        ),
+        ShapeParameter(
+            name="width",
+            label="Width (depth)",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=12.0,
+            max_value=48.0,
+            required=True,
+            description="Front-to-back depth of the countertop",
+        ),
+        ShapeParameter(
+            name="thickness",
+            label="Thickness",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=0.25,
+            max_value=4.0,
+            default_value=0.75,
+            required=False,
+            description="Slab thickness; defaults to 3/4\"",
+        ),
+        ShapeParameter(
+            name="backsplash_height",
+            label="Backsplash height",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=0.0,
+            max_value=24.0,
+            default_value=0.0,
+            required=False,
+            description="Height of the integrated backsplash (0 = no backsplash)",
+        ),
+        ShapeParameter(
+            name="seam_enabled",
+            label="Allow seams",
+            parameter_type=ShapeParameterType.boolean,
+            default_value=True,
+            required=False,
+            description="If true, allows splitting the run into multiple pieces. If false, forces a single piece.",
+        ),
+        ShapeParameter(
+            name="slab_max_length",
+            label="Maximum slab length",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=48.0,
+            max_value=144.0,
+            default_value=120.0,
+            required=False,
+            description="Maximum length of a single piece before a seam is required",
+        ),
+        ShapeParameter(
+            name="label",
+            label="Piece label",
+            parameter_type=ShapeParameterType.string,
+            required=False,
+            description="Custom piece name shown on output packages",
+        ),
+    ],
+)
+
+# ---------------------------------------------------------------------------
 # Future stubs (not yet implemented)
 # ---------------------------------------------------------------------------
 
-# STRAIGHT_KITCHEN_TEMPLATE = ...
 # L_KITCHEN_TEMPLATE       = ...
 
 # ---------------------------------------------------------------------------
@@ -249,7 +333,8 @@ VANITY_TEMPLATE = ShapeTemplate(
 # ---------------------------------------------------------------------------
 
 SHAPE_REGISTRY: dict[str, ShapeTemplate] = {
-    "rectangle": RECTANGLE_TEMPLATE,
-    "island":    ISLAND_TEMPLATE,
-    "vanity":    VANITY_TEMPLATE,
+    "rectangle":        RECTANGLE_TEMPLATE,
+    "island":           ISLAND_TEMPLATE,
+    "vanity":           VANITY_TEMPLATE,
+    "straight_kitchen": STRAIGHT_KITCHEN_TEMPLATE,
 }

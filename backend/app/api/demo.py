@@ -4,9 +4,10 @@ Demo Router
 Browser-accessible demo endpoints — no request body required.
 
 Endpoints:
-    GET /api/v1/demo/rectangle   → SVG of a standard 96" × 26" countertop
-    GET /api/v1/demo/island      → SVG of a standard 72" × 36" island
-    GET /api/v1/demo/vanity      → SVG of a standard 48" × 22" vanity with sink
+    GET /api/v1/demo/rectangle        → SVG of a standard 96" × 26" countertop
+    GET /api/v1/demo/island           → SVG of a standard 72" × 36" island
+    GET /api/v1/demo/vanity           → SVG of a standard 48" × 22" vanity with sink
+    GET /api/v1/demo/straight-kitchen → SVG of a 180" × 26" kitchen (multi-piece)
 
 Purpose:
     Frictionless demo path. Open a URL in a browser and immediately see
@@ -64,6 +65,15 @@ _DEMO_PAYLOADS = {
         "sink_cutout": True,
         "sink_diameter": 12.0,
         "label": "Bathroom Vanity",
+    },
+    "straight_kitchen": {
+        "length": 180.0,
+        "width": 26.0,
+        "thickness": 0.75,
+        "backsplash_height": 4.0,
+        "seam_enabled": True,
+        "slab_max_length": 120.0,
+        "label": "Main Kitchen Run",
     },
 }
 
@@ -151,3 +161,23 @@ def demo_island() -> Response:
 def demo_vanity() -> Response:
     """Render the vanity demo SVG inline."""
     return _svg_response("vanity")
+
+
+# ---------------------------------------------------------------------------
+# GET /demo/straight-kitchen
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/demo/straight-kitchen",
+    summary="Straight Kitchen demo drawing",
+    description=(
+        "Returns a pre-built SVG of a 180\" × 26\" straight kitchen run. "
+        "Demonstrates multi-piece fabrication logic with seams. "
+        "Open directly in a browser — no request body required."
+    ),
+    responses={200: {"content": {"image/svg+xml": {}}, "description": "Demo SVG"}},
+    status_code=200,
+)
+def demo_straight_kitchen() -> Response:
+    """Render the straight kitchen demo SVG inline."""
+    return _svg_response("straight_kitchen")
