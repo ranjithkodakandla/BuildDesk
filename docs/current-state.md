@@ -103,10 +103,17 @@ Completed:
   ✓ docs/gcp-live-notes.md created documenting Apple Silicon/amd64 architecture fixes
   ✓ End-to-end CRUD, SVG, and PDF exports successfully validated on live HTTPS URL
 
+✓ Cloud SQL PostgreSQL Integration Layer v1
+  ✓ docs/cloud-sql.md generated detailing setup and connection strategy
+  ✓ backend/app/api/health.py enhanced to differentiate cloudsql backend explicitly
+  ✓ .env.gcp.example updated with proper Cloud SQL Socket format
+  ✓ scripts/deploy.sh enhanced to link Cloud SQL instances and Secrets automatically
+  ✓ Makefile extended with deploy-cloudsql command
+  ✓ Architecture updated to reflect Secret Manager usage and durable persistence
+
 Total smoke tests: 110 / 110 passing.
 
 Next:
 
 □ Async Engine Migration (asyncpg)
-□ Cloud SQL Integration
 □ Frontend React integration

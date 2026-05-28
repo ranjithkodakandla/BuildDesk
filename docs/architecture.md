@@ -453,21 +453,24 @@ The current implementation leverages PostgreSQL via the robust `psycopg` (v3) dr
 
 BuildDesk is designed to be fully containerised, with a stateless API tier and a managed database tier. The primary deployment target is **GCP Cloud Run**.
 
+### Cloud SQL Production Persistence Architecture
+For production persistence, BuildDesk utilizes Google Cloud SQL (PostgreSQL). The database is accessed via Cloud Run using the internal Auth Proxy (Unix sockets) ensuring high security without public IP exposure. The `DATABASE_URL` is never committed to code; it is explicitly managed in Google Secret Manager and injected at deployment time.
+
 ### Cloud Run Architecture
 The FastAPI application operates completely stateless, meeting Cloud Run's requirements. 
 - It binds dynamically to the `$PORT` environment variable provided by GCP.
-- Liveness and readiness probes rely on the `GET /api/v1/health` endpoint, which verifies the application version and `database` connectivity status explicitly.
+- Liveness and readiness probes rely on the `GET /api/v1/health` endpoint, which verifies the application version and `database` connectivity status explicitly. It dynamically reports backend connections (e.g. `sqlite-connected`, `postgres-connected`, or `cloudsql-postgres-connected`).
 - The `lifespan` startup hook ensures a graceful boot and database verification before accepting traffic.
 - Post-deployment validation is codified in `docs/deployment-checklist.md` to ensure Tenant isolation and DB connectivity function in the cloud environment.
 
 ### GCP Deployment Workflow
-Deployment to GCP is automated via `gcloud` and Cloud Build. Detailed setup instructions are maintained in `docs/gcp-setup.md`. We support a direct deployment shell script (`backend/scripts/deploy.sh`) and a structured `cloudbuild.yaml` file.
+Deployment to GCP is automated via `gcloud` and Cloud Build. Detailed setup instructions for Cloud Run and Cloud SQL are maintained in `docs/gcp-setup.md` and `docs/cloud-sql.md`. We support a direct deployment shell script (`backend/scripts/deploy.sh`) which has been extended to securely link Cloud SQL instances and inject Secret Manager credentials.
 ```bash
 make deploy-gcp
 ```
-or
+or for Cloud SQL:
 ```bash
-make cloud-build
+CLOUDSQL_INSTANCE=project:region:instance make deploy-cloudsql
 ```
 
 You can validate deployments using the CLI helpers:

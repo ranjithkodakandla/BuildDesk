@@ -26,13 +26,21 @@ docker push "$IMAGE_URL"
 
 # 3. Deploy
 echo "🚢 Deploying to Cloud Run..."
+CLOUDSQL_ARGS=""
+if [ -n "$CLOUDSQL_INSTANCE" ]; then
+  CLOUDSQL_ARGS="--add-cloudsql-instances $CLOUDSQL_INSTANCE"
+  echo "Linking Cloud SQL Instance: $CLOUDSQL_INSTANCE"
+fi
+
 gcloud run deploy "$SERVICE_NAME" \
   --image "$IMAGE_URL" \
   --region "$REGION" \
   --project "$PROJECT_ID" \
   --platform managed \
   --allow-unauthenticated \
+  $CLOUDSQL_ARGS \
   --set-env-vars APP_ENV=production,USE_SQL_REPOSITORY=true \
+  --set-secrets DATABASE_URL=BUILDDESK_DATABASE_URL:latest \
   --quiet
 
 echo "✅ Deployment completed successfully!"

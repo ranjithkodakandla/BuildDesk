@@ -1,4 +1,4 @@
-.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres cloud-build cloud-run-local deploy-gcp check-health cloud-logs
+.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres cloud-build cloud-run-local deploy-gcp deploy-cloudsql check-health cloud-logs
 
 run:
 	uvicorn app.main:app --reload --port 8000
@@ -35,6 +35,10 @@ cloud-run-local:
 	docker run -p 8080:8000 -e PORT=8000 -e APP_ENV=development builddesk-api:latest
 
 deploy-gcp:
+	./scripts/deploy.sh
+
+deploy-cloudsql:
+	@if [ -z "$$CLOUDSQL_INSTANCE" ]; then echo "Error: CLOUDSQL_INSTANCE is not set (e.g. project:region:instance)"; exit 1; fi
 	./scripts/deploy.sh
 
 check-health:

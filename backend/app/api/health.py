@@ -35,7 +35,14 @@ def health_check() -> HealthResponse:
         try:
             from app.db.session import engine
             with engine.connect():
-                db_status = "sql-connected"
+                if "sqlite" in settings.database_url:
+                    db_status = "sqlite-connected"
+                elif "cloudsql" in settings.database_url:
+                    db_status = "cloudsql-postgres-connected"
+                elif "postgres" in settings.database_url:
+                    db_status = "postgres-connected"
+                else:
+                    db_status = "sql-connected"
         except Exception:
             db_status = "sql-disconnected"
 
