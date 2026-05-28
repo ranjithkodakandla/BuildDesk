@@ -41,6 +41,7 @@ from app.services.geometry_builder import GeometryBuilder, UnsupportedShapeError
 from app.services.template_resolver import TemplateResolver
 from app.repositories.geometry_repository import GeometryRepository
 from app.dependencies import get_geometry_repository
+from app.tenant_context import get_current_tenant
 
 router = APIRouter()
 
@@ -74,6 +75,7 @@ _builder  = GeometryBuilder()
 )
 def create_geometry(
     request: GeometryRequest,
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
     repo: GeometryRepository = Depends(get_geometry_repository),
 ) -> GeometryResponse:
     """
@@ -112,7 +114,7 @@ def create_geometry(
             template=template,
             resolved=resolved,
             project_id=request.project_id,
-            tenant_id=request.tenant_id,
+            tenant_id=tenant_id,
         )
     except UnsupportedShapeError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -194,9 +196,10 @@ def create_geometry(
 )
 def get_geometry(
     geometry_id: uuid.UUID,
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
     repo: GeometryRepository = Depends(get_geometry_repository),
 ) -> GeometryResponse:
-    record = repo.get_by_id(geometry_id)
+    record = repo.get_by_id(tenant_id, geometry_id)
     if not record:
         raise HTTPException(status_code=404, detail=f"Geometry '{geometry_id}' not found.")
     return record

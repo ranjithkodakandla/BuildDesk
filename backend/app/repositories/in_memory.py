@@ -16,11 +16,14 @@ class InMemoryGeometryRepository(GeometryRepository):
     def save(self, geometry: GeometryResponse) -> None:
         self._store[geometry.geometry_id] = geometry
 
-    def get_by_id(self, geometry_id: uuid.UUID) -> Optional[GeometryResponse]:
-        return self._store.get(geometry_id)
+    def get_by_id(self, tenant_id: uuid.UUID, geometry_id: uuid.UUID) -> Optional[GeometryResponse]:
+        record = self._store.get(geometry_id)
+        if record and str(record.tenant_id) == str(tenant_id):
+            return record
+        return None
 
-    def list_by_project(self, project_id: uuid.UUID) -> List[GeometryResponse]:
-        return [g for g in self._store.values() if g.project_id == project_id]
+    def list_by_project(self, tenant_id: uuid.UUID, project_id: uuid.UUID) -> List[GeometryResponse]:
+        return [g for g in self._store.values() if str(g.project_id) == str(project_id) and str(g.tenant_id) == str(tenant_id)]
 
 
 class InMemoryProjectRepository(ProjectRepository):

@@ -73,7 +73,7 @@ def run_all() -> None:
         "dimensions": {"length": 96.0, "width": 26.0},
     }
     
-    resp_inline = client.post("/api/v1/export/pdf", json=payload)
+    resp_inline = client.post("/api/v1/export/pdf", json=payload, headers={"X-Tenant-ID": TENANT_ID})
     assert_status(resp_inline, 200, "export API status")
     if resp_inline.headers["content-type"] != "application/pdf":
         fail("content-type", "Expected application/pdf")
@@ -85,7 +85,7 @@ def run_all() -> None:
 
     # ── 3. API Endpoint (Download) ───────────────────────────────────────────
     section("3. POST /api/v1/export/pdf?download=true")
-    resp_dl = client.post("/api/v1/export/pdf?download=true", json=payload)
+    resp_dl = client.post("/api/v1/export/pdf?download=true", json=payload, headers={"X-Tenant-ID": TENANT_ID})
     assert_status(resp_dl, 200, "download API status")
     disp = resp_dl.headers.get("content-disposition", "")
     if "attachment" not in disp:

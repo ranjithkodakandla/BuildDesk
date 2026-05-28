@@ -61,10 +61,17 @@ Completed:
   ✓ USE_SQL_REPOSITORY env configuration
   ✓ API validation for POST and GET endpoints
 
-Total smoke tests: 102 / 102 passing.
+✓ Multi-Tenant Foundation v1 — 5 smoke tests passing
+  ✓ X-Tenant-ID header resolution dependency
+  ✓ Tenant-scoped POST/GET APIs for /geometry and /export
+  ✓ Tenant filtering in InMemory and SQL Repositories
+  ✓ Demo endpoints bound to secure _DEMO_TENANT_ID
+
+Total smoke tests: 107 / 107 passing.
 
 Next:
 
 □ Alembic schema migrations
 □ PostgreSQL + Async Engine
+□ JWT Authentication / AuthZ
 □ Frontend React integration

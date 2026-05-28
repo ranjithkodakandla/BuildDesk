@@ -40,6 +40,8 @@ from app.exporters.pdf_exporter import PdfExporter
 from app.geometry.shapes import SHAPE_REGISTRY
 from app.services.geometry_builder import GeometryBuilder, UnsupportedShapeError
 from app.services.template_resolver import TemplateResolver
+from app.tenant_context import get_current_tenant
+from fastapi import Depends
 
 router = APIRouter()
 
@@ -77,6 +79,7 @@ _pdf_exporter = PdfExporter()
 )
 def export_svg(
     request: GeometryRequest,
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
     download: bool = Query(
         default=False,
         description=(
@@ -121,7 +124,7 @@ def export_svg(
             template=template,
             resolved=resolved,
             project_id=request.project_id,
-            tenant_id=request.tenant_id,
+            tenant_id=tenant_id,
         )
     except UnsupportedShapeError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -162,7 +165,11 @@ def export_svg(
     },
     status_code=200,
 )
-def export_pdf(request: GeometryRequest, download: bool = False) -> Response:
+def export_pdf(
+    request: GeometryRequest,
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
+    download: bool = False
+) -> Response:
     template = SHAPE_REGISTRY.get(request.shape_type.lower())
     if not template:
         raise HTTPException(status_code=404, detail=f"Shape '{request.shape_type}' not found.")
@@ -179,7 +186,7 @@ def export_pdf(request: GeometryRequest, download: bool = False) -> Response:
             template=template,
             resolved=resolve_res,
             project_id=request.project_id,
-            tenant_id=request.tenant_id,
+            tenant_id=tenant_id,
         )
     except UnsupportedShapeError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

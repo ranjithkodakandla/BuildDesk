@@ -426,10 +426,25 @@ BuildDesk uses the **Repository Pattern** defined via Python `Protocol`s in `bac
 
 Dependency Injection (`backend/app/dependencies.py`) controls the active persistence layer. The FastAPI application depends on `get_geometry_repository()`, which dynamically returns either `InMemoryGeometryRepository` or `SQLGeometryRepository` based on the `USE_SQL_REPOSITORY` environment variable. The API and business logic remain completely unchanged regardless of the storage backend.
 
-### Phase 2 Database Roadmap
+## Multi-Tenant Architecture
+
+BuildDesk is designed to support multiple tenants (e.g., different fabrication shops) natively. Tenant isolation is treated as a first-class application concern.
+
+### Tenant Context Resolution
+
+Currently, in Phase 1, tenant context is passed explicitly via the `X-Tenant-ID` HTTP header. This is resolved centrally by a FastAPI dependency (`get_current_tenant` in `backend/app/tenant_context.py`), ensuring that downstream handlers do not need to parse headers manually. 
+
+### Tenant Isolation Rules
+
+1. **API Perimeter**: Every `/api/v1/geometry` and `/api/v1/export/*` endpoint demands the `X-Tenant-ID` header.
+2. **Repository Layer**: The `GeometryRepository` protocol explicitly requires `tenant_id` for reads and listings (e.g., `get_by_id(tenant_id, geometry_id)`). This guarantees that isolation is enforced at the data access level.
+3. **Database Security**: Both `InMemoryGeometryRepository` and `SQLGeometryRepository` aggressively filter queries using the provided `tenant_id`. Cross-tenant data leakage is fundamentally prevented at the source.
+4. **Demo Scoping**: Demo endpoints (`/api/v1/demo/*`) bypass header checks but are internally bound to a hardcoded `_DEMO_TENANT_ID` to ensure Demo payloads don't bleed into active tenant workspaces.
+
+## Phase 2 Database Roadmap
 
 The current SQL implementation is the foundation. To reach full production readiness:
 1. Introduce Alembic for schema migrations.
 2. Adopt PostgreSQL via an async engine (`asyncpg`).
-3. Add robust tenant row security and constraints.
-4. Normalize the JSON payload schema for advanced querying if needed.
+3. Add robust row-level security and constraints.
+4. Implement JWT authentication to securely extract Tenant IDs.

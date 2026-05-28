@@ -8,10 +8,10 @@ class GeometryRepository(Protocol):
         """Persist a newly generated geometry record."""
         ...
 
-    def get_by_id(self, geometry_id: uuid.UUID) -> Optional[GeometryResponse]:
+    def get_by_id(self, tenant_id: uuid.UUID, geometry_id: uuid.UUID) -> Optional[GeometryResponse]:
         """Retrieve a geometry record by its UUID."""
         ...
 
-    def list_by_project(self, project_id: uuid.UUID) -> List[GeometryResponse]:
+    def list_by_project(self, tenant_id: uuid.UUID, project_id: uuid.UUID) -> List[GeometryResponse]:
         """List all geometry records for a given project."""
         ...

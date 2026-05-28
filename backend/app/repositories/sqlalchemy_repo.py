@@ -33,14 +33,20 @@ class SQLGeometryRepository:
             self.session.add(record)
         self.session.commit()
 
-    def get_by_id(self, geometry_id: uuid.UUID) -> Optional[GeometryResponse]:
-        record = self.session.query(GeometryRecord).filter(GeometryRecord.id == str(geometry_id)).first()
+    def get_by_id(self, tenant_id: uuid.UUID, geometry_id: uuid.UUID) -> Optional[GeometryResponse]:
+        record = self.session.query(GeometryRecord).filter(
+            GeometryRecord.id == str(geometry_id),
+            GeometryRecord.tenant_id == str(tenant_id)
+        ).first()
         if not record:
             return None
         return GeometryResponse.model_validate(record.payload)
 
-    def list_by_project(self, project_id: uuid.UUID) -> List[GeometryResponse]:
-        records = self.session.query(GeometryRecord).filter(GeometryRecord.project_id == str(project_id)).all()
+    def list_by_project(self, tenant_id: uuid.UUID, project_id: uuid.UUID) -> List[GeometryResponse]:
+        records = self.session.query(GeometryRecord).filter(
+            GeometryRecord.project_id == str(project_id),
+            GeometryRecord.tenant_id == str(tenant_id)
+        ).all()
         return [GeometryResponse.model_validate(r.payload) for r in records]
 
 

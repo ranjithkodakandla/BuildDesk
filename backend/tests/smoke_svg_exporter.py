@@ -157,7 +157,7 @@ def run_all() -> None:
         "tenant_id":  TENANT_ID,
         "dimensions": {"length": 120, "width": 26},
     }
-    resp = client.post("/api/v1/export/svg", json=payload)
+    resp = client.post("/api/v1/export/svg", json=payload, headers={"X-Tenant-ID": TENANT_ID})
     assert_status(resp, 200, "export svg status")
     ct = resp.headers.get("content-type", "")
     if "svg" not in ct:
@@ -177,7 +177,7 @@ def run_all() -> None:
         "tenant_id":  TENANT_ID,
         "dimensions": {"length": 96},   # width missing
     }
-    resp = client.post("/api/v1/export/svg", json=payload_bad)
+    resp = client.post("/api/v1/export/svg", json=payload_bad, headers={"X-Tenant-ID": TENANT_ID})
     assert_status(resp, 422, "missing param 422")
     body = resp.json()
     assert body["error"] == "validation_error"
@@ -191,7 +191,7 @@ def run_all() -> None:
         "tenant_id":  TENANT_ID,
         "dimensions": {"length": 96, "width": 42},
     }
-    resp = client.post("/api/v1/export/svg", json=payload_unknown)
+    resp = client.post("/api/v1/export/svg", json=payload_unknown, headers={"X-Tenant-ID": TENANT_ID})
     assert_status(resp, 404, "unknown shape 404")
     ok("404 unknown shape", f"detail='{resp.json()['detail'][:60]}'")
 

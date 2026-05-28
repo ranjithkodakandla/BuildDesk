@@ -60,7 +60,7 @@ def run_all() -> None:
     # ── 1. Create via API ────────────────────────────────────────────────────
     section("1. POST /api/v1/geometry (Create & Save via SQL)")
     
-    resp_post = client.post("/api/v1/geometry", json=payload)
+    resp_post = client.post("/api/v1/geometry", json=payload, headers={"X-Tenant-ID": tenant_id})
     if resp_post.status_code != 200:
         fail("api POST", f"Failed to generate and save: {resp_post.text}")
     
@@ -89,7 +89,7 @@ def run_all() -> None:
     # ── 3. Retrieve via API ──────────────────────────────────────────────────
     section("3. GET /api/v1/geometry/{id} (Retrieve)")
     
-    resp_get = client.get(f"/api/v1/geometry/{geom_id}")
+    resp_get = client.get(f"/api/v1/geometry/{geom_id}", headers={"X-Tenant-ID": tenant_id})
     if resp_get.status_code != 200:
         fail("api GET", f"Failed to retrieve {geom_id}: {resp_get.text}")
         
