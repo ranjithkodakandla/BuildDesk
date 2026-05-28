@@ -17,8 +17,8 @@ echo "Image:   $IMAGE_URL"
 echo "------------------------------------------------"
 
 # 1. Build the image
-echo "🔨 Building Docker image..."
-docker build -t "$IMAGE_URL" .
+echo "🔨 Building Docker image for Cloud Run (linux/amd64)..."
+docker build --platform linux/amd64 -t "$IMAGE_URL" .
 
 # 2. Push the image
 echo "☁️ Pushing to Artifact Registry..."

@@ -476,6 +476,9 @@ make check-health CLOUD_RUN_URL=https://builddesk-api-...
 make cloud-logs
 ```
 
+### Live Deployment Status
+The backend API is fully proven on GCP Cloud Run. During the initial deployment, it was verified that container images must explicitly target the `linux/amd64` architecture. This fix is now codified into the deployment scripts. The service handles database persistence and SVG/PDF generation seamlessly within the serverless environment.
+
 ### Artifact Registry Strategy
 All Docker images are built and pushed to a Google Cloud Artifact Registry repository (e.g. `us-central1-docker.pkg.dev/...`) tagged uniquely by their Git `COMMIT_SHA`. Cloud Run is then instructed to deploy from this registry URL, ensuring traceability and rollback capability.
 

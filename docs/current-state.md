@@ -99,8 +99,11 @@ Completed:
   ✓ docs/deployment-checklist.md created (Health, Export, Tenant validation)
   ✓ Makefile extended with `check-health` and `cloud-logs`
   ✓ Verified /health endpoint suitability for Cloud Run probes
+  ✓ Real deployment to Cloud Run successfully achieved
+  ✓ docs/gcp-live-notes.md created documenting Apple Silicon/amd64 architecture fixes
+  ✓ End-to-end CRUD, SVG, and PDF exports successfully validated on live HTTPS URL
 
-Total smoke tests: 110 / 110 passing (1 skipped due to docker pull).
+Total smoke tests: 110 / 110 passing.
 
 Next:
 
