@@ -1,4 +1,4 @@
-.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres
+.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres cloud-build cloud-run-local deploy-gcp
 
 run:
 	uvicorn app.main:app --reload --port 8000
@@ -26,3 +26,13 @@ postgres-down:
 
 migrate-postgres:
 	USE_SQL_REPOSITORY=true DATABASE_URL="postgresql+psycopg://builddesk:password@localhost:5432/builddesk" alembic upgrade head
+
+cloud-build:
+	gcloud builds submit --config cloudbuild.yaml .
+
+cloud-run-local:
+	docker build -t builddesk-api:latest .
+	docker run -p 8080:8000 -e PORT=8000 -e APP_ENV=development builddesk-api:latest
+
+deploy-gcp:
+	./scripts/deploy.sh

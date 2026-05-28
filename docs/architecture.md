@@ -453,23 +453,37 @@ The current implementation leverages PostgreSQL via the robust `psycopg` (v3) dr
 
 BuildDesk is designed to be fully containerised, with a stateless API tier and a managed database tier. The primary deployment target is **GCP Cloud Run**.
 
+### Cloud Run Architecture
+The FastAPI application operates completely stateless, meeting Cloud Run's requirements. 
+- It binds dynamically to the `$PORT` environment variable provided by GCP.
+- Liveness and readiness probes rely on the `GET /api/v1/health` endpoint, which verifies the application version and `database` connectivity status explicitly.
+- The `lifespan` startup hook ensures a graceful boot and database verification before accepting traffic.
+
+### GCP Deployment Workflow
+Deployment to GCP is automated via `gcloud` and Cloud Build. We support a direct deployment shell script (`backend/scripts/deploy.sh`) and a structured `cloudbuild.yaml` file.
+```bash
+make deploy-gcp
+```
+or
+```bash
+make cloud-build
+```
+
+### Artifact Registry Strategy
+All Docker images are built and pushed to a Google Cloud Artifact Registry repository (e.g. `us-central1-docker.pkg.dev/...`) tagged uniquely by their Git `COMMIT_SHA`. Cloud Run is then instructed to deploy from this registry URL, ensuring traceability and rollback capability.
+
 ### Docker Workflow
 A minimal, production-ready `Dockerfile` based on `python:3.11-slim` is provided in the `backend/` directory. It uses a multi-stage build to ensure a small image size and fast startup times.
-- **Port:** Exposes `8000` internally.
-- **Server:** Runs via `uvicorn`.
 
-### Postgres Development Workflow
-The `docker-compose.yml` provides a local `postgres` service with an integrated healthcheck and persistent volume mapping.
-To bring up the database:
+For local development and testing, a `docker-compose.yml` is provided. It stands up the FastAPI container alongside a PostgreSQL instance (preparing for the Phase 2 database migration).
+To start the local stack:
 ```bash
-make postgres-up
+make docker-up
 ```
-To run Alembic schema migrations specifically against the PostgreSQL instance:
+To validate the Cloud Run environment locally:
 ```bash
-make migrate-postgres
+make cloud-run-local
 ```
-
-### Application Configuration
 The platform is strictly configured via environment variables, loaded safely through Pydantic's `BaseSettings` (`app.config`). This ensures a 12-Factor App design.
 Key environment variables include:
 - `APP_ENV`: Deployment environment (`development` / `production`)

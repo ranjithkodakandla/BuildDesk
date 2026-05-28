@@ -87,6 +87,13 @@ Completed:
   ✓ Alembic Postgres schema compatibility verified
   ✓ smoke_postgres.py covering migration, CRUD, and isolation
 
+✓ GCP Deployment Layer v1
+  ✓ Dockerfile updated for dynamic PORT injection
+  ✓ backend/.env.gcp.example generated
+  ✓ cloudbuild.yaml CI/CD pipeline foundation added
+  ✓ scripts/deploy.sh automation script added
+  ✓ Makefile helpers (`cloud-build`, `cloud-run-local`, `deploy-gcp`) added
+
 Total smoke tests: 110 / 110 passing (1 skipped due to docker pull).
 
 Next:
