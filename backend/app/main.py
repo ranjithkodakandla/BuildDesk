@@ -34,13 +34,17 @@ def create_app() -> FastAPI:
     async def lifespan(app: FastAPI):
         if settings.use_sql_repository:
             from app.db.session import engine
+            backend_type = "postgres" if "postgresql" in settings.database_url else "sqlite"
+            print(f"Starting BuildDesk with SQL Repository ({backend_type} backend)")
             try:
                 # Validate DB connectivity at startup
                 with engine.connect():
-                    pass
+                    print(f"✓ Database connectivity to {backend_type} established.")
             except Exception as e:
                 # Log but do not fail to allow migrations to run
                 print(f"Warning: Database connection failed during startup: {e}")
+        else:
+            print("Starting BuildDesk with In-Memory Repository")
         yield
 
     application = FastAPI(

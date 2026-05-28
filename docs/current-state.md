@@ -80,10 +80,17 @@ Completed:
   ✓ Enhanced /health endpoint with database status
   ✓ Makefile for streamlined CLI workflow
 
-Total smoke tests: 110 / 110 passing.
+✓ PostgreSQL Integration Layer v1
+  ✓ psycopg[binary] dependency added
+  ✓ PostgreSQL docker-compose service with healthchecks
+  ✓ Dynamic backend type detection in FastAPI startup logs
+  ✓ Alembic Postgres schema compatibility verified
+  ✓ smoke_postgres.py covering migration, CRUD, and isolation
+
+Total smoke tests: 110 / 110 passing (1 skipped due to docker pull).
 
 Next:
 
-□ PostgreSQL + Async Engine
+□ Async Engine Migration (asyncpg)
 □ JWT Authentication / AuthZ
 □ Frontend React integration

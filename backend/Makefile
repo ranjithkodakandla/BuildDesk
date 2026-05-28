@@ -1,4 +1,4 @@
-.PHONY: run test migrate docker-build docker-up
+.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres
 
 run:
 	uvicorn app.main:app --reload --port 8000
@@ -15,8 +15,14 @@ test:
 migrate:
 	alembic upgrade head
 
-docker-build:
-	docker build -t builddesk-api:latest .
-
 docker-up:
 	docker-compose up -d
+
+postgres-up:
+	docker-compose up -d postgres
+
+postgres-down:
+	docker-compose down
+
+migrate-postgres:
+	USE_SQL_REPOSITORY=true DATABASE_URL="postgresql+psycopg://builddesk:password@localhost:5432/builddesk" alembic upgrade head

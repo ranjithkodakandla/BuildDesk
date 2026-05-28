@@ -443,10 +443,11 @@ Currently, in Phase 1, tenant context is passed explicitly via the `X-Tenant-ID`
 
 ## Phase 2 Database Roadmap
 
-The current SQL implementation is the foundation. To reach full production readiness:
+The current implementation leverages PostgreSQL via the robust `psycopg` (v3) driver in synchronous mode. To reach full production readiness:
 1. Adopt PostgreSQL via an async engine (`asyncpg`).
-2. Add robust row-level security and constraints.
-3. Implement JWT authentication to securely extract Tenant IDs.
+2. Update repository abstractions to be fully async (`asyncSession`).
+3. Add robust row-level security and constraints.
+4. Implement JWT authentication to securely extract Tenant IDs.
 
 ## Deployment Strategy
 
@@ -457,10 +458,15 @@ A minimal, production-ready `Dockerfile` based on `python:3.11-slim` is provided
 - **Port:** Exposes `8000` internally.
 - **Server:** Runs via `uvicorn`.
 
-For local development and testing, a `docker-compose.yml` is provided. It stands up the FastAPI container alongside a PostgreSQL instance (preparing for the Phase 2 database migration).
-To start the local stack:
+### Postgres Development Workflow
+The `docker-compose.yml` provides a local `postgres` service with an integrated healthcheck and persistent volume mapping.
+To bring up the database:
 ```bash
-make docker-up
+make postgres-up
+```
+To run Alembic schema migrations specifically against the PostgreSQL instance:
+```bash
+make migrate-postgres
 ```
 
 ### Application Configuration
