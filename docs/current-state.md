@@ -28,6 +28,7 @@ Completed:
   ✓ GET  /api/v1/shapes
   ✓ GET  /api/v1/shapes/{shape_type}
   ✓ POST /api/v1/geometry
+  ✓ GET  /api/v1/geometry/{geometry_id} (retrieves saved geometry via Repository)
   ✓ POST /api/v1/export/svg
     ✓ Default: Content-Disposition inline (browser-viewable)
     ✓ ?download=true: Content-Disposition attachment (file download)
@@ -47,12 +48,15 @@ Completed:
                      tests/output/vanity_demo.svg
                      tests/output/straight_kitchen_demo.svg
                      tests/output/l_kitchen_demo.svg
+✓ Persistence Foundation Layer (Pre-DB) — 4 smoke tests passing
+  ✓ Repository pattern defined via Protocols (Geometry, Project, Tenant)
+  ✓ In-Memory dict/UUID implementations
+  ✓ FastAPI Dependency Injection (dependencies.py)
 
-Total smoke tests: 90 / 90 passing.
+Total smoke tests: 94 / 94 passing.
 
 Next:
 
-□ GET /api/v1/geometry/{id} (requires persistence)
-□ Tenant-scoped DB sessions (Phase 2 — Cloud SQL)
+□ Tenant-scoped DB sessions + SQLAlchemy (Phase 2 — Cloud SQL)
 □ PDF output engine — builder package (Phase 2)
 □ Frontend React integration

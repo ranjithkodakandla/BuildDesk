@@ -22,8 +22,10 @@ HTTP status codes used:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
+
+import uuid
 
 from app.api.schemas import (
     DimensionLineResponse,
@@ -37,6 +39,8 @@ from app.api.schemas import (
 from app.geometry.shapes import SHAPE_REGISTRY
 from app.services.geometry_builder import GeometryBuilder, UnsupportedShapeError
 from app.services.template_resolver import TemplateResolver
+from app.repositories.geometry_repository import GeometryRepository
+from app.dependencies import get_geometry_repository
 
 router = APIRouter()
 
@@ -68,7 +72,10 @@ _builder  = GeometryBuilder()
     },
     status_code=200,
 )
-def create_geometry(request: GeometryRequest) -> GeometryResponse:
+def create_geometry(
+    request: GeometryRequest,
+    repo: GeometryRepository = Depends(get_geometry_repository),
+) -> GeometryResponse:
     """
     Full geometry generation pipeline:
         request → template lookup → resolver → builder → response
@@ -152,7 +159,7 @@ def create_geometry(request: GeometryRequest) -> GeometryResponse:
         for d in result.dimension_lines
     ]
 
-    return GeometryResponse(
+    response = GeometryResponse(
         geometry_id=g.geometry_id,
         template_id=g.template_id,
         project_id=g.project_id,
@@ -168,3 +175,28 @@ def create_geometry(request: GeometryRequest) -> GeometryResponse:
         metadata=g.metadata,
         schema_version=g.schema_version,
     )
+    
+    # ── 5. Persist geometry ─────────────────────────────────────────────────
+    repo.save(response)
+
+    return response
+
+# ---------------------------------------------------------------------------
+# GET /geometry/{geometry_id}
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/geometry/{geometry_id}",
+    response_model=GeometryResponse,
+    summary="Retrieve geometry by ID",
+    description="Fetches a previously generated geometry record from the repository.",
+    responses={404: {"description": "Geometry record not found"}},
+)
+def get_geometry(
+    geometry_id: uuid.UUID,
+    repo: GeometryRepository = Depends(get_geometry_repository),
+) -> GeometryResponse:
+    record = repo.get_by_id(geometry_id)
+    if not record:
+        raise HTTPException(status_code=404, detail=f"Geometry '{geometry_id}' not found.")
+    return record

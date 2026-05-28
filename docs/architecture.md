@@ -392,3 +392,23 @@ Frictionless demo paths — no request body or server required.
 
 
 
+
+## Persistence Foundation (Pre-DB)
+
+To prepare for Phase 2 without coupling to a specific database (like SQLAlchemy/Postgres), BuildDesk uses the **Repository Pattern** defined via Python `Protocol`s in `backend/app/repositories/`.
+
+- `GeometryRepository`: Saves and retrieves full `GeometryResponse` payloads (which include the computed `GeometryModel` and all primitives).
+- `ProjectRepository` and `TenantRepository`: Manage domain models.
+
+### Implementation
+
+- `InMemoryGeometryRepository`: Stores records in a Python dictionary.
+- Dependency Injection (`backend/app/dependencies.py`): The FastAPI application depends on `get_geometry_repository()`, which currently provides the in-memory singleton.
+- **API Integration**: `POST /api/v1/geometry` persists the computed output, and `GET /api/v1/geometry/{geometry_id}` retrieves it.
+
+### Persistence Roadmap
+
+In Phase 2, this architecture allows a seamless swap:
+1. Implement `SqlAlchemyGeometryRepository` adhering to the `GeometryRepository` protocol.
+2. Update `app/dependencies.py` to return the SQL repository instead of the in-memory dictionary.
+3. The API and business logic remain completely unchanged.
