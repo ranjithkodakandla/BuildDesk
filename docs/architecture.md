@@ -410,22 +410,26 @@ Frictionless demo paths — no request body or server required.
 
 
 
-## Persistence Foundation (Pre-DB)
+## Persistence Foundation
 
-To prepare for Phase 2 without coupling to a specific database (like SQLAlchemy/Postgres), BuildDesk uses the **Repository Pattern** defined via Python `Protocol`s in `backend/app/repositories/`.
+BuildDesk uses the **Repository Pattern** defined via Python `Protocol`s in `backend/app/repositories/`.
 
 - `GeometryRepository`: Saves and retrieves full `GeometryResponse` payloads (which include the computed `GeometryModel` and all primitives).
 - `ProjectRepository` and `TenantRepository`: Manage domain models.
 
-### Implementation
+### Implementations
 
-- `InMemoryGeometryRepository`: Stores records in a Python dictionary.
-- Dependency Injection (`backend/app/dependencies.py`): The FastAPI application depends on `get_geometry_repository()`, which currently provides the in-memory singleton.
-- **API Integration**: `POST /api/v1/geometry` persists the computed output, and `GET /api/v1/geometry/{geometry_id}` retrieves it.
+1. **In-Memory** (`app/repositories/in_memory.py`): Stores records in a Python dictionary. Used for fast testing and pure in-memory development.
+2. **SQLAlchemy** (`app/repositories/sqlalchemy_repo.py`): Real relational database backend (currently configured for SQLite). Defines `TenantRecord`, `ProjectRecord`, and `GeometryRecord` models (`app/db/models.py`).
 
-### Persistence Roadmap
+### Repository Swap Architecture
 
-In Phase 2, this architecture allows a seamless swap:
-1. Implement `SqlAlchemyGeometryRepository` adhering to the `GeometryRepository` protocol.
-2. Update `app/dependencies.py` to return the SQL repository instead of the in-memory dictionary.
-3. The API and business logic remain completely unchanged.
+Dependency Injection (`backend/app/dependencies.py`) controls the active persistence layer. The FastAPI application depends on `get_geometry_repository()`, which dynamically returns either `InMemoryGeometryRepository` or `SQLGeometryRepository` based on the `USE_SQL_REPOSITORY` environment variable. The API and business logic remain completely unchanged regardless of the storage backend.
+
+### Phase 2 Database Roadmap
+
+The current SQL implementation is the foundation. To reach full production readiness:
+1. Introduce Alembic for schema migrations.
+2. Adopt PostgreSQL via an async engine (`asyncpg`).
+3. Add robust tenant row security and constraints.
+4. Normalize the JSON payload schema for advanced querying if needed.

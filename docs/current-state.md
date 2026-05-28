@@ -55,13 +55,16 @@ Completed:
   ✓ Repository pattern defined via Protocols (Geometry, Project, Tenant)
   ✓ In-Memory dict/UUID implementations
   ✓ FastAPI Dependency Injection (dependencies.py)
-✓ PDF Export Layer v1 — 4 smoke tests passing
-  ✓ PdfExporter class (reportlab)
-  ✓ 8.5x11 scale-to-fit layout
+✓ SQL Persistence Layer v1 — 4 SQL smoke tests passing
+  ✓ SQLAlchemy foundation (session.py, base.py, models.py)
+  ✓ SQL implementations for Geometry, Project, Tenant repositories
+  ✓ USE_SQL_REPOSITORY env configuration
+  ✓ API validation for POST and GET endpoints
 
-Total smoke tests: 98 / 98 passing.
+Total smoke tests: 102 / 102 passing.
 
 Next:
 
-□ Tenant-scoped DB sessions + SQLAlchemy (Phase 2 — Cloud SQL)
+□ Alembic schema migrations
+□ PostgreSQL + Async Engine
 □ Frontend React integration
