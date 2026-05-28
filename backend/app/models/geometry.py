@@ -114,6 +114,12 @@ class GeometryModel(BaseDomainModel):
         description="Linked StoneDesk geometry record when cross-platform sync is active",
     )
 
+    # Shape-specific extras (e.g. corner_radius, exposed_edges for island)
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Shape-specific metadata set by the geometry handler (e.g. corner_radius)",
+    )
+
     @model_validator(mode="after")
     def dimensions_must_not_be_empty(self) -> "GeometryModel":
         if not self.dimensions:

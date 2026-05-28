@@ -204,7 +204,7 @@ Seed templates (`geometry/shapes.py`) are system-level templates
 
 MVP shapes:
     rectangle         → implemented
-    island            → stub (future)
+    island            → implemented
     vanity            → stub (future)
     straight_kitchen  → stub (future)
     l_kitchen         → stub (future)
@@ -219,11 +219,23 @@ TemplateResolver → ResolvedDimensions
                 GeometryBuilder
                         ↓
             GeometryBuildResult
-                ├── GeometryModel   (status=computed, pieces=[...])
-                ├── List[Rectangle]
+                ├── GeometryModel   (status=computed, pieces=[...], metadata={})
+                ├── List[Rectangle]  (bounding box)
+                ├── List[Polyline]   (shape outlines — closed for island)
                 ├── List[DimensionLine]
-                └── List[TextAnnotation]
+                ├── List[TextAnnotation]
+                ├── List[Line]       (loose lines, optional)
+                └── List[Circle]     (sink cutouts, optional)
 ```
+
+### Island shape — design notes
+
+- Island uses a **closed Polyline** outline (not a bare Rectangle) to signal
+  "all four edges are exposed/finished".
+- A bounding `Rectangle` primitive is also produced for area/viewbox calculations.
+- 4 `DimensionLine`s are emitted — one per side — reflecting all-edge accessibility.
+- `corner_radius` is carried in `GeometryModel.metadata` for future rounded-corner
+  rendering by the PDF/SVG engine.
 
 Shape dispatch:
 - `_DISPATCH` dict maps shape_type slug → handler method

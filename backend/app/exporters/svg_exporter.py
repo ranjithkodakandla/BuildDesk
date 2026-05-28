@@ -124,9 +124,19 @@ class SvgExporter:
         elements: List[str] = []
 
         # ── Collect content bounds ──────────────────────────────────────
-        # Scan all rectangles for max extents; fall back to 100×50 if empty.
-        max_w = max((r.width for r in result.rectangles), default=100.0)
-        max_h = max((r.height for r in result.rectangles), default=50.0)
+        # Scan rectangles and polylines for max extents.
+        rect_w = max((r.width  for r in result.rectangles), default=0.0)
+        rect_h = max((r.height for r in result.rectangles), default=0.0)
+        poly_w = max(
+            (max(p.x for p in pl.points) for pl in result.polylines if pl.points),
+            default=0.0,
+        )
+        poly_h = max(
+            (max(p.y for p in pl.points) for pl in result.polylines if pl.points),
+            default=0.0,
+        )
+        max_w = max(rect_w, poly_w) or 100.0
+        max_h = max(rect_h, poly_h) or 50.0
 
         # SVG viewport: content + margins + dim line space
         dim_extra = _DIM_OFFSET + 40.0     # extra for bottom/left dim lines
@@ -165,19 +175,16 @@ class SvgExporter:
             elements.append(self._render_annotation(ann, svg_h, dy_title))
 
         # ── Loose lines ─────────────────────────────────────────────────
-        if hasattr(result, "lines"):
-            for line in result.lines:
-                elements.append(self._render_line(line, svg_h, dy_title))
+        for line in result.lines:
+            elements.append(self._render_line(line, svg_h, dy_title))
 
         # ── Circles ─────────────────────────────────────────────────────
-        if hasattr(result, "circles"):
-            for circle in result.circles:
-                elements.append(self._render_circle(circle, svg_h, dy_title))
+        for circle in result.circles:
+            elements.append(self._render_circle(circle, svg_h, dy_title))
 
         # ── Polylines ───────────────────────────────────────────────────
-        if hasattr(result, "polylines"):
-            for poly in result.polylines:
-                elements.append(self._render_polyline(poly, svg_h, dy_title))
+        for poly in result.polylines:
+            elements.append(self._render_polyline(poly, svg_h, dy_title))
 
         # ── Build SVG document ──────────────────────────────────────────
         total_h = svg_h + title_h
