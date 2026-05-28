@@ -26,7 +26,10 @@ _geometry_repo = InMemoryGeometryRepository()
 _project_repo = InMemoryProjectRepository()
 _tenant_repo = InMemoryTenantRepository()
 
-USE_SQL_REPOSITORY = os.getenv("USE_SQL_REPOSITORY", "false").lower() == "true"
+from app.config import get_settings
+
+settings = get_settings()
+USE_SQL_REPOSITORY = settings.use_sql_repository
 
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()

@@ -8,22 +8,17 @@ and general platform status monitoring.
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.config import get_settings
+
 router = APIRouter()
-
-
-# ---------------------------------------------------------------------------
-# Response schemas
-# ---------------------------------------------------------------------------
+settings = get_settings()
 
 class HealthResponse(BaseModel):
     status: str
     service: str
     version: str
-
-
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
+    database: str
+    tenant_mode: bool
 
 @router.get(
     "/health",
@@ -33,8 +28,21 @@ class HealthResponse(BaseModel):
 )
 def health_check() -> HealthResponse:
     """Liveness / readiness probe for Cloud Run and load balancers."""
+    
+    db_status = "in-memory"
+    if settings.use_sql_repository:
+        db_status = "sql"
+        try:
+            from app.db.session import engine
+            with engine.connect():
+                db_status = "sql-connected"
+        except Exception:
+            db_status = "sql-disconnected"
+
     return HealthResponse(
         status="ok",
         service="buildesk-api",
-        version="0.1.0",
+        version=settings.app_version,
+        database=db_status,
+        tenant_mode=True,
     )

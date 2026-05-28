@@ -448,6 +448,31 @@ The current SQL implementation is the foundation. To reach full production readi
 2. Add robust row-level security and constraints.
 3. Implement JWT authentication to securely extract Tenant IDs.
 
+## Deployment Strategy
+
+BuildDesk is designed to be fully containerised, with a stateless API tier and a managed database tier. The primary deployment target is **GCP Cloud Run**.
+
+### Docker Workflow
+A minimal, production-ready `Dockerfile` based on `python:3.11-slim` is provided in the `backend/` directory. It uses a multi-stage build to ensure a small image size and fast startup times.
+- **Port:** Exposes `8000` internally.
+- **Server:** Runs via `uvicorn`.
+
+For local development and testing, a `docker-compose.yml` is provided. It stands up the FastAPI container alongside a PostgreSQL instance (preparing for the Phase 2 database migration).
+To start the local stack:
+```bash
+make docker-up
+```
+
+### Application Configuration
+The platform is strictly configured via environment variables, loaded safely through Pydantic's `BaseSettings` (`app.config`). This ensures a 12-Factor App design.
+Key environment variables include:
+- `APP_ENV`: Deployment environment (`development` / `production`)
+- `USE_SQL_REPOSITORY`: Toggles between `InMemory` and `SQL` persistence.
+- `DATABASE_URL`: The SQLAlchemy connection string.
+
+### GCP Readiness
+The API exposes a `GET /api/v1/health` endpoint specifically designed to serve as a liveness and readiness probe for Google Cloud Run and load balancers. It validates basic app status, version, and database connectivity on every check.
+
 ## Alembic Schema Evolution
 
 Database migrations are strictly managed using [Alembic](https://alembic.sqlalchemy.org/). The `backend/alembic/` directory contains the migration environment, which is wired to introspect the SQLAlchemy declarative models (`app/db/models.py`) to autogenerate migration scripts.

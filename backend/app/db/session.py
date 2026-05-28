@@ -6,7 +6,10 @@ from app.db.base import Base
 # Import models so Base metadata is populated
 from app.db.models import TenantRecord, ProjectRecord, GeometryRecord
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./builddesk.db")
+from app.config import get_settings
+
+settings = get_settings()
+DATABASE_URL = settings.database_url
 
 engine = create_engine(
     DATABASE_URL,

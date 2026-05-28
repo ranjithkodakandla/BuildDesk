@@ -21,10 +21,27 @@ from app.config import get_settings
 # Application factory
 # ---------------------------------------------------------------------------
 
+from contextlib import asynccontextmanager
+
+from app.config import get_settings
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
 
     settings = get_settings()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        if settings.use_sql_repository:
+            from app.db.session import engine
+            try:
+                # Validate DB connectivity at startup
+                with engine.connect():
+                    pass
+            except Exception as e:
+                # Log but do not fail to allow migrations to run
+                print(f"Warning: Database connection failed during startup: {e}")
+        yield
 
     application = FastAPI(
         title="BuildDesk API",
@@ -35,6 +52,7 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         docs_url="/docs",
         redoc_url="/redoc",
+        lifespan=lifespan,
     )
 
     # ------------------------------------------------------------------

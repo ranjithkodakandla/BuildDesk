@@ -21,12 +21,14 @@ class Settings(BaseSettings):
     # Application
     app_env: str = "development"
     app_version: str = "0.1.0"
+    debug: bool = False
 
     # CORS – comma-separated list handled as a list by pydantic-settings
     allowed_origins: List[str] = ["http://localhost:5173"]
 
-    # Database (Phase 2)
-    database_url: str = ""
+    # Database
+    database_url: str = "sqlite:///./builddesk.db"
+    use_sql_repository: bool = False
 
     # GCP (Phase 2 / 3)
     gcp_project_id: str = ""
