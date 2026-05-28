@@ -444,7 +444,33 @@ Currently, in Phase 1, tenant context is passed explicitly via the `X-Tenant-ID`
 ## Phase 2 Database Roadmap
 
 The current SQL implementation is the foundation. To reach full production readiness:
-1. Introduce Alembic for schema migrations.
-2. Adopt PostgreSQL via an async engine (`asyncpg`).
-3. Add robust row-level security and constraints.
-4. Implement JWT authentication to securely extract Tenant IDs.
+1. Adopt PostgreSQL via an async engine (`asyncpg`).
+2. Add robust row-level security and constraints.
+3. Implement JWT authentication to securely extract Tenant IDs.
+
+## Alembic Schema Evolution
+
+Database migrations are strictly managed using [Alembic](https://alembic.sqlalchemy.org/). The `backend/alembic/` directory contains the migration environment, which is wired to introspect the SQLAlchemy declarative models (`app/db/models.py`) to autogenerate migration scripts.
+
+### Alembic Usage Guide
+
+All commands must be executed within the `backend/` directory with the virtual environment activated.
+
+**1. Create a new migration (Autogenerate)**
+Whenever a model changes in `models.py`:
+```bash
+alembic revision --autogenerate -m "description_of_change"
+```
+*Note: Always review the generated script in `alembic/versions/` before applying it, as autogenerate can miss complex constraint changes.*
+
+**2. Apply migrations**
+To upgrade the database to the latest schema:
+```bash
+alembic upgrade head
+```
+
+**3. Revert migrations**
+To downgrade the schema by one revision:
+```bash
+alembic downgrade -1
+```
