@@ -18,27 +18,35 @@ Completed:
 ✓ Template Resolver (backend/app/services/template_resolver.py)
   ✓ 10 smoke tests passing
 ✓ Geometry Primitive Layer (backend/app/geometry/primitives.py)
-  ✓ Point, Line, Rectangle, Circle
-  ✓ Polyline, DimensionLine, TextAnnotation
-  ✓ Computed properties (area, perimeter, edges, corners, center, segments)
+  ✓ Point, Line, Rectangle, Circle, Polyline, DimensionLine, TextAnnotation
 ✓ Shape Library Seeds (backend/app/geometry/shapes.py)
-  ✓ RECTANGLE_TEMPLATE (with full parameter definitions)
-  ✓ SHAPE_REGISTRY dict for slug-based lookup
+  ✓ RECTANGLE_TEMPLATE + SHAPE_REGISTRY
 ✓ Geometry Builder (backend/app/services/geometry_builder.py)
-  ✓ Shape dispatcher (_DISPATCH table — extensible)
-  ✓ Rectangle handler → GeometryModel + GeometryPiece + primitives
-  ✓ GeometryBuildError, UnsupportedShapeError exceptions
-  ✓ Future stubs: island, vanity, straight_kitchen, l_kitchen
-✓ Geometry Builder smoke tests (backend/tests/smoke_geometry_builder.py)
-  ✓ 10 test cases — all passing
-  ✓ Full pipeline: TemplateResolver → GeometryBuilder → GeometryModel
+  ✓ Rectangle handler + dispatch table
+  ✓ 10 smoke tests passing
+✓ REST API Layer v1
+  ✓ API schemas (backend/app/api/schemas.py)
+    ✓ GeometryRequest, GeometryResponse, ShapeTemplateResponse, etc.
+    ✓ ValidationErrorResponse (domain 422 errors)
+  ✓ Shapes router (backend/app/api/shapes.py)
+    ✓ GET /api/v1/shapes          → list all templates
+    ✓ GET /api/v1/shapes/{type}   → template detail + parameter schema
+    ✓ 404 for unknown shape types
+  ✓ Geometry router (backend/app/api/geometry.py)
+    ✓ POST /api/v1/geometry       → full resolver → builder pipeline
+    ✓ 200 computed geometry + primitives
+    ✓ 422 domain validation errors (missing, range, select)
+    ✓ 404 unknown shape type
+    ✓ 400 unsupported shape handler
+  ✓ Routers registered in main.py (health, shapes, geometry)
+✓ API smoke tests (backend/tests/smoke_api.py)
+  ✓ 10 test cases — all passing (FastAPI TestClient)
 
 Next:
 
 □ Implement Island shape handler
-□ Implement L-Kitchen shape handler (two-piece, L-shaped polyline)
-□ API routes: ShapeTemplate list, GeometryModel create + retrieve
-□ Shape library HTTP endpoint (GET /api/v1/shapes)
-□ Geometry build HTTP endpoint (POST /api/v1/geometry)
+□ Implement L-Kitchen shape handler
+□ GET /api/v1/geometry/{id} (requires persistence)
 □ Tenant-scoped DB sessions (Phase 2 — Cloud SQL)
 □ PDF output engine — builder package (Phase 2)
+□ Frontend React integration

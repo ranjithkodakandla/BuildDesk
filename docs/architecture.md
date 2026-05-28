@@ -234,5 +234,37 @@ Exceptions:
     GeometryBuildError    – generic build failure (e.g. error result passed in)
     UnsupportedShapeError – no handler registered for shape_type
 
+## REST API Layer v1
+
+All routes under `/api/v1`. No authentication in Phase 1.
+
+### Endpoint table
+
+| Method | Path | Purpose | Success | Errors |
+|---|---|---|---|---|
+| GET | `/api/v1/health` | Liveness probe | 200 | — |
+| GET | `/api/v1/shapes` | List shape templates | 200 | — |
+| GET | `/api/v1/shapes/{shape_type}` | Template + parameter schema | 200 | 404 |
+| POST | `/api/v1/geometry` | Full geometry pipeline | 200 | 404, 422, 400 |
+
+### API Schema separation
+
+HTTP contracts (`api/schemas.py`) are kept strictly separate from
+internal domain models (`models/`). Routers translate between the two layers.
+
+    GeometryRequest      → TemplateResolver → GeometryBuilder → GeometryResponse
+    ShapeTemplateResponse ← ShapeTemplate (domain model)
+    ValidationErrorResponse → 422 domain validation errors (not FastAPI's built-in 422)
+
+### HTTP status codes
+
+| Code | Meaning in BuildDesk |
+|---|---|
+| 200 | Success |
+| 400 | Shape type exists in registry but handler not yet implemented |
+| 404 | Shape type not found in SHAPE_REGISTRY |
+| 422 | Domain validation error — missing required param, out-of-range, invalid option |
+
+
 
 

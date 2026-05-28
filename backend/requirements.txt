@@ -4,3 +4,5 @@ pydantic[email]==2.13.4
 pydantic-settings==2.14.1
 python-dotenv==1.2.2
 email-validator==2.3.0
+httpx2==2.2.0
+
