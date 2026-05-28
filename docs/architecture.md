@@ -315,6 +315,44 @@ Mapping: `svg_y = svg_height - margin - geometry_y × scale`
 Same request body as `POST /geometry`.
 Errors: 404 (unknown shape), 422 (validation), 400 (unimplemented).
 
+Query param `?download=true` switches `Content-Disposition` from `inline` to `attachment`.
+
+## Demo Workflow (`api/demo.py`, `tools/generate_demo_svg.py`)
+
+Frictionless demo paths — no request body or server required.
+
+### Three demo paths
+
+| Path | Method | Description |
+|---|---|---|
+| Browser URL | `GET /api/v1/demo/rectangle` | Opens SVG directly in browser |
+| Browser URL | `GET /api/v1/demo/island` | Opens SVG directly in browser |
+| CLI tool | `python tools/generate_demo_svg.py all` | Writes SVG files to `tests/output/` |
+
+### Demo payloads (hardcoded)
+
+| Shape | length | width | extras |
+|---|---|---|---|
+| rectangle | 96" | 26" | thickness=0.75", label="Standard Countertop" |
+| island | 72" | 36" | thickness=0.75", corner_radius=2.0", label="Kitchen Island" |
+
+### Demo endpoint response headers
+
+    Content-Type:        image/svg+xml
+    Content-Disposition: inline; filename="demo-<shape>.svg"
+    Cache-Control:       no-store
+    X-BuildDesk-Demo:    true
+
+### CLI tool usage
+
+    python tools/generate_demo_svg.py rectangle          # single shape
+    python tools/generate_demo_svg.py island             # single shape
+    python tools/generate_demo_svg.py all                # all shapes (default)
+    python tools/generate_demo_svg.py all --open         # open in browser
+    python tools/generate_demo_svg.py all --scale 6.0   # larger SVG
+    python tools/generate_demo_svg.py all --out-dir /tmp # custom output dir
+
+
 
 
 

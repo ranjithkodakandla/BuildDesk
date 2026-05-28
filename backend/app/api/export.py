@@ -14,6 +14,10 @@ Pipeline:
         → SvgExporter
         → SVG Response (Content-Type: image/svg+xml)
 
+Query parameters:
+    download=true  → adds Content-Disposition: attachment, triggering file download.
+                     Default (false) renders inline (browser-viewable).
+
 HTTP status codes:
     200  – SVG generated; body is SVG text
     404  – shape_type not found in registry
@@ -23,7 +27,7 @@ HTTP status codes:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 
 from app.api.schemas import (
@@ -55,12 +59,13 @@ _exporter = SvgExporter()
         "Accepts the same payload as POST /geometry. "
         "Runs the full geometry pipeline and returns a self-contained SVG "
         "string with the shape outline, dimension lines, and annotations. "
-        "Response Content-Type is image/svg+xml."
+        "Response Content-Type is image/svg+xml. "
+        "Add `?download=true` to receive the SVG as a file attachment."
     ),
     responses={
         200: {
             "content": {"image/svg+xml": {}},
-            "description": "SVG drawing",
+            "description": "SVG drawing (inline or attachment)",
         },
         404: {"description": "Shape type not found in registry"},
         422: {"description": "Dimension validation error"},
@@ -68,10 +73,22 @@ _exporter = SvgExporter()
     },
     status_code=200,
 )
-def export_svg(request: GeometryRequest) -> Response:
+def export_svg(
+    request: GeometryRequest,
+    download: bool = Query(
+        default=False,
+        description=(
+            "Set to true to return SVG as a downloadable file attachment "
+            "instead of rendering inline in the browser."
+        ),
+    ),
+) -> Response:
     """
     Full export pipeline:
         request → template lookup → resolver → builder → SVG exporter → response
+
+    When download=true: Content-Disposition is 'attachment' (triggers download).
+    When download=false (default): Content-Disposition is 'inline' (renders in browser).
     """
 
     # ── 1. Template lookup ──────────────────────────────────────────────────
@@ -110,13 +127,14 @@ def export_svg(request: GeometryRequest) -> Response:
     # ── 4. SVG export ───────────────────────────────────────────────────────
     svg_string = _exporter.export(result)
 
+    filename   = f"buildesk-{request.shape_type}.svg"
+    disposition = f'attachment; filename="{filename}"' if download else f'inline; filename="{filename}"'
+
     return Response(
         content=svg_string,
         media_type="image/svg+xml",
         headers={
-            "Content-Disposition": (
-                f'inline; filename="buildesk-{request.shape_type}.svg"'
-            ),
+            "Content-Disposition": disposition,
             "Cache-Control": "no-store",
         },
     )

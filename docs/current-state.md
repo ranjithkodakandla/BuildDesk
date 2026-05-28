@@ -14,32 +14,33 @@ Completed:
 ✓ Geometry Primitive Layer
   ✓ Point, Line, Rectangle, Circle, Polyline, DimensionLine, TextAnnotation
 ✓ Shape Library Seeds
-  ✓ RECTANGLE_TEMPLATE + SHAPE_REGISTRY
-  ✓ ISLAND_TEMPLATE (all 4 edges exposed, optional corner_radius)
+  ✓ RECTANGLE_TEMPLATE + ISLAND_TEMPLATE
   ✓ SHAPE_REGISTRY: {"rectangle", "island"}
 ✓ Geometry Builder — refactored + extended
   ✓ GeometryBuildResult: rectangles, polylines, lines, circles, dimension_lines, annotations
   ✓ Rectangle handler — 10 smoke tests passing
   ✓ Island handler — 15 smoke tests passing
-    ✓ Closed Polyline outline (all 4 edges)
-    ✓ Bounding Rectangle primitive
-    ✓ 4 DimensionLines (all four sides)
-    ✓ GeometryPiece + GeometryModel (with metadata: corner_radius, exposed_edges)
-  ✓ Extensible _DISPATCH table
   ✓ Stubs: vanity, straight_kitchen, l_kitchen
-✓ GeometryModel: added optional metadata Dict
-✓ REST API Layer v1
+✓ GeometryModel: optional metadata Dict
+✓ REST API Layer v1 — 10 API smoke tests passing
   ✓ GET  /api/v1/shapes
-  ✓ GET  /api/v1/shapes/{shape_type}    (rectangle + island)
-  ✓ POST /api/v1/geometry               (rectangle + island)
-  ✓ POST /api/v1/export/svg             (rectangle + island SVG)
-  ✓ 10 API smoke tests passing
-✓ SVG Export Layer v1
+  ✓ GET  /api/v1/shapes/{shape_type}
+  ✓ POST /api/v1/geometry
+  ✓ POST /api/v1/export/svg
+    ✓ Default: Content-Disposition inline (browser-viewable)
+    ✓ ?download=true: Content-Disposition attachment (file download)
+✓ SVG Export Layer v1 — 11 SVG smoke tests passing
   ✓ SvgExporter — renders all 6 primitive types
-  ✓ Proper field access (no hasattr); bounding box includes polylines
-  ✓ 11 SVG smoke tests passing
+  ✓ Proper field access; polyline-aware bounding box
+✓ Preview / Export Convenience Layer — 10 smoke tests passing
+  ✓ GET /api/v1/demo/rectangle  (hardcoded 96" × 26" countertop)
+  ✓ GET /api/v1/demo/island     (hardcoded 72" × 36" island)
+  ✓ X-BuildDesk-Demo header on all demo responses
+  ✓ tools/generate_demo_svg.py CLI (rectangle, island, all)
+  ✓ Saved artifacts: tests/output/rectangle_demo.svg
+                     tests/output/island_demo.svg
 
-Total smoke tests: 56 / 56 passing.
+Total smoke tests: 66 / 66 passing.
 
 Next:
 

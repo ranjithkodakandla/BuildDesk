@@ -10,6 +10,7 @@ Architecture: Multi-tenant, backend-first, GCP Cloud Run target.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.demo import router as demo_router
 from app.api.export import router as export_router
 from app.api.geometry import router as geometry_router
 from app.api.health import router as health_router
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
     application.include_router(shapes_router,   prefix="/api/v1", tags=["shapes"])
     application.include_router(geometry_router, prefix="/api/v1", tags=["geometry"])
     application.include_router(export_router,   prefix="/api/v1", tags=["export"])
+    application.include_router(demo_router,     prefix="/api/v1", tags=["demo"])
 
     return application
 
