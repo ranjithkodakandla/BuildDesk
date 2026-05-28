@@ -9,9 +9,7 @@ Shapes defined here:
     ISLAND_TEMPLATE     – kitchen island (all 4 edges exposed)
     VANITY_TEMPLATE     – wall-mounted bathroom vanity (3 edges exposed, optional sink)
     STRAIGHT_KITCHEN_TEMPLATE – straight kitchen run (multi-piece support)
-
-Future shapes (not yet implemented):
-    L_KITCHEN_TEMPLATE
+    L_KITCHEN_TEMPLATE  – L-shaped layout with miter/butt seam logic
 
 These templates are system_template=True (available to all tenants).
 They are pure in-memory fixtures for Phase 1. In Phase 2 they will be
@@ -323,10 +321,96 @@ STRAIGHT_KITCHEN_TEMPLATE = ShapeTemplate(
 )
 
 # ---------------------------------------------------------------------------
-# Future stubs (not yet implemented)
+# L-Kitchen — L-shaped layout with corner join support
 # ---------------------------------------------------------------------------
 
-# L_KITCHEN_TEMPLATE       = ...
+L_KITCHEN_TEMPLATE = ShapeTemplate(
+    name="L-Kitchen",
+    category=ShapeCategory.kitchen,
+    system_template=True,
+    description=(
+        "L-shaped non-linear kitchen layout. Supports splitting the corner "
+        "into multiple physical pieces using either a miter or butt join."
+    ),
+    parameters=[
+        ShapeParameter(
+            name="leg_a_length",
+            label="Leg A Length",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=24.0,
+            max_value=240.0,
+            required=True,
+            description="Length of the left vertical leg (including corner)",
+        ),
+        ShapeParameter(
+            name="leg_b_length",
+            label="Leg B Length",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=24.0,
+            max_value=240.0,
+            required=True,
+            description="Length of the right horizontal leg (including corner)",
+        ),
+        ShapeParameter(
+            name="width",
+            label="Width (depth)",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=12.0,
+            max_value=48.0,
+            required=True,
+            description="Front-to-back depth of the countertop for both legs",
+        ),
+        ShapeParameter(
+            name="thickness",
+            label="Thickness",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=0.25,
+            max_value=4.0,
+            default_value=0.75,
+            required=False,
+            description="Slab thickness; defaults to 3/4\"",
+        ),
+        ShapeParameter(
+            name="backsplash_height",
+            label="Backsplash height",
+            parameter_type=ShapeParameterType.number,
+            unit=DimensionUnit.inches,
+            min_value=0.0,
+            max_value=24.0,
+            default_value=0.0,
+            required=False,
+            description="Height of the integrated backsplash (0 = no backsplash)",
+        ),
+        ShapeParameter(
+            name="seam_enabled",
+            label="Allow seams",
+            parameter_type=ShapeParameterType.boolean,
+            default_value=True,
+            required=False,
+            description="If true, allows splitting the run into multiple pieces at the corner.",
+        ),
+        ShapeParameter(
+            name="corner_join_type",
+            label="Corner Join Type",
+            parameter_type=ShapeParameterType.select,
+            allowed_options=["miter", "butt"],
+            default_value="butt",
+            required=False,
+            description="Type of seam join at the corner (miter or butt)",
+        ),
+        ShapeParameter(
+            name="label",
+            label="Piece label",
+            parameter_type=ShapeParameterType.string,
+            required=False,
+            description="Custom piece name shown on output packages",
+        ),
+    ],
+)
 
 # ---------------------------------------------------------------------------
 # Registry: shape_type slug → template
@@ -337,4 +421,5 @@ SHAPE_REGISTRY: dict[str, ShapeTemplate] = {
     "island":           ISLAND_TEMPLATE,
     "vanity":           VANITY_TEMPLATE,
     "straight_kitchen": STRAIGHT_KITCHEN_TEMPLATE,
+    "l_kitchen":        L_KITCHEN_TEMPLATE,
 }

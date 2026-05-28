@@ -72,6 +72,15 @@ _DEMO_PAYLOADS: dict[str, dict] = {
         "slab_max_length": 120.0,
         "label": "Main Kitchen Run",
     },
+    "l_kitchen": {
+        "leg_a_length": 120.0,
+        "leg_b_length": 96.0,
+        "width": 26.0,
+        "thickness": 1.18,
+        "seam_enabled": True,
+        "corner_join_type": "miter",
+        "label": "L-Shape Layout",
+    },
 }
 
 _DEMO_PROJECT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")

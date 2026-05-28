@@ -846,8 +846,189 @@ class GeometryBuilder:
             circles=[]
         )
 
-    def _build_l_kitchen(self, template, dims, project_id, tenant_id):
-        raise UnsupportedShapeError("L-kitchen shape handler not yet implemented.")
+    def _build_l_kitchen(
+        self,
+        template: ShapeTemplate,
+        dims: Dict[str, Any],
+        project_id: uuid.UUID,
+        tenant_id: uuid.UUID,
+    ) -> GeometryBuildResult:
+        """
+        Build geometry for an L-shaped kitchen.
+
+        Construction rules:
+            - The outer corner is at (0,0). Leg A goes UP along the y-axis.
+            - Leg B goes RIGHT along the x-axis.
+            - The outer edges (x=0, y=0) sit flush against the wall, so they are omitted
+              from the overall outline (open polyline).
+            - Exposed edges: Leg A end, Leg A front, inner corner, Leg B front, Leg B end.
+
+        Fabrication rules (Corner join):
+            - If seam_enabled=True, the shape is split into 2 pieces at the corner.
+            - corner_join_type="butt": Leg A gets the corner (y=0 to leg_a_length). Leg B butts into it.
+            - corner_join_type="miter": Both pieces meet at a 45-degree angle. Bounding boxes overlap.
+        """
+        leg_a_length     = float(dims["leg_a_length"])
+        leg_b_length     = float(dims["leg_b_length"])
+        width            = float(dims["width"])
+        thickness        = float(dims.get("thickness", 0.75))
+        backsplash_h     = float(dims.get("backsplash_height", 0.0))
+        seam_enabled     = bool(dims.get("seam_enabled", True))
+        corner_join_type = str(dims.get("corner_join_type", "butt")).lower()
+        base_label       = str(dims.get("label", template.name))
+
+        # Overall outline (Open Polyline tracing the exposed edges)
+        # Sequence: top-left (Leg A end start) -> top-right -> inner corner -> Leg B top-right -> Leg B bottom-right
+        outline = Polyline(
+            points=[
+                Point(x=0.0,          y=leg_a_length), # Top-left (wall corner)
+                Point(x=width,        y=leg_a_length), # Top-right of Leg A
+                Point(x=width,        y=width),        # Inner corner
+                Point(x=leg_b_length, y=width),        # Top-right of Leg B
+                Point(x=leg_b_length, y=0.0),          # Bottom-right of Leg B (wall corner)
+            ],
+            closed=False,
+            label=f"{base_label} exposed outline",
+            metadata={"edge_type": "partial_exposed", "omitted_edges": ["back wall A", "back wall B"]}
+        )
+
+        pieces = []
+        rectangles = []
+        lines = []
+        annotations = []
+        dim_lines = []
+
+        area = (leg_a_length * width) + ((leg_b_length - width) * width)
+        perimeter = leg_a_length + leg_b_length + (leg_a_length - width) + (leg_b_length - width) + width + width
+
+        if not seam_enabled:
+            # Single piece for the whole L
+            pieces.append(GeometryPiece(
+                label=base_label,
+                width=width,
+                length=max(leg_a_length, leg_b_length),
+                thickness=thickness,
+                area=area,
+                notes="Single L-shaped piece."
+            ))
+            rectangles.append(Rectangle(
+                origin=Point(x=0.0, y=0.0),
+                width=leg_b_length,
+                height=leg_a_length,
+                label=base_label,
+                metadata={"role": "bounding_box"}
+            ))
+            annotations.append(TextAnnotation(
+                position=Point(x=leg_b_length/2, y=leg_a_length/2),
+                text=base_label,
+                font_size=14.0,
+                bold=True
+            ))
+        else:
+            if corner_join_type == "butt":
+                # Leg A owns the corner
+                p_a_len = leg_a_length
+                p_b_len = leg_b_length - width
+                
+                # Piece A
+                pieces.append(GeometryPiece(
+                    label=f"{base_label} - Leg A", width=width, length=p_a_len, thickness=thickness, area=p_a_len*width, notes="Butt join."
+                ))
+                rectangles.append(Rectangle(
+                    origin=Point(x=0.0, y=0.0), width=width, height=p_a_len, label="Leg A", metadata={"role": "piece", "piece_num": 1}
+                ))
+                annotations.append(TextAnnotation(position=Point(x=width/2, y=leg_a_length/2), text="Leg A", font_size=12.0))
+
+                # Piece B
+                pieces.append(GeometryPiece(
+                    label=f"{base_label} - Leg B", width=width, length=p_b_len, thickness=thickness, area=p_b_len*width, notes="Butt join."
+                ))
+                rectangles.append(Rectangle(
+                    origin=Point(x=width, y=0.0), width=p_b_len, height=width, label="Leg B", metadata={"role": "piece", "piece_num": 2}
+                ))
+                annotations.append(TextAnnotation(position=Point(x=width + p_b_len/2, y=width/2), text="Leg B", font_size=12.0))
+
+                # Seam line
+                lines.append(Line(
+                    start=Point(x=width, y=0.0), end=Point(x=width, y=width),
+                    label="Butt Seam", metadata={"line_type": "seam", "stroke_dasharray": "5,5"}
+                ))
+                annotations.append(TextAnnotation(position=Point(x=width, y=width/2), text="SEAM", font_size=8.0))
+
+            elif corner_join_type == "miter":
+                # Both pieces meet at a 45 deg angle
+                # We record their full bounding boxes (which overlap in the corner)
+                pieces.append(GeometryPiece(
+                    label=f"{base_label} - Leg A (Miter)", width=width, length=leg_a_length, thickness=thickness, area=leg_a_length*width - (width*width/2), notes="Miter join."
+                ))
+                rectangles.append(Rectangle(
+                    origin=Point(x=0.0, y=0.0), width=width, height=leg_a_length, label="Leg A", metadata={"role": "bounding_box", "piece_num": 1}
+                ))
+                annotations.append(TextAnnotation(position=Point(x=width/2, y=leg_a_length/2 + width/2), text="Leg A", font_size=12.0))
+
+                pieces.append(GeometryPiece(
+                    label=f"{base_label} - Leg B (Miter)", width=width, length=leg_b_length, thickness=thickness, area=leg_b_length*width - (width*width/2), notes="Miter join."
+                ))
+                rectangles.append(Rectangle(
+                    origin=Point(x=0.0, y=0.0), width=leg_b_length, height=width, label="Leg B", metadata={"role": "bounding_box", "piece_num": 2}
+                ))
+                annotations.append(TextAnnotation(position=Point(x=leg_b_length/2 + width/2, y=width/2), text="Leg B", font_size=12.0))
+
+                # Seam line (diagonal)
+                lines.append(Line(
+                    start=Point(x=0.0, y=0.0), end=Point(x=width, y=width),
+                    label="Miter Seam", metadata={"line_type": "seam", "stroke_dasharray": "5,5"}
+                ))
+                annotations.append(TextAnnotation(position=Point(x=width/2, y=width/2), text="MITER SEAM", font_size=8.0))
+
+        # Overall Dimensions
+        # Leg A outer length (left wall)
+        dim_lines.append(DimensionLine(
+            start=Point(x=0.0, y=0.0), end=Point(x=0.0, y=leg_a_length),
+            value=leg_a_length, unit="in", label=f"Leg A: {leg_a_length}\"", offset=-1.0
+        ))
+        # Leg B outer length (bottom wall)
+        dim_lines.append(DimensionLine(
+            start=Point(x=0.0, y=0.0), end=Point(x=leg_b_length, y=0.0),
+            value=leg_b_length, unit="in", label=f"Leg B: {leg_b_length}\"", offset=-1.0
+        ))
+        # Leg A End width (top)
+        dim_lines.append(DimensionLine(
+            start=Point(x=0.0, y=leg_a_length), end=Point(x=width, y=leg_a_length),
+            value=width, unit="in", label=f"{width}\"", offset=1.0
+        ))
+        # Leg B End width (right)
+        dim_lines.append(DimensionLine(
+            start=Point(x=leg_b_length, y=0.0), end=Point(x=leg_b_length, y=width),
+            value=width, unit="in", label=f"{width}\"", offset=1.0
+        ))
+
+        geometry = GeometryModel(
+            project_id=project_id,
+            tenant_id=tenant_id,
+            template_id=template.template_id,
+            dimensions=dict(dims),
+            status=GeometryStatus.computed,
+            pieces=pieces,
+            computed_area=area,
+            computed_perimeter=perimeter,
+            metadata={
+                "corner_join_type": corner_join_type if seam_enabled else "none",
+                "corner_count": 1,
+                "seam_enabled": seam_enabled,
+                "seam_count": 1 if seam_enabled else 0,
+            },
+        )
+
+        return GeometryBuildResult(
+            geometry=geometry,
+            rectangles=rectangles,
+            polylines=[outline],
+            dimension_lines=dim_lines,
+            annotations=annotations,
+            lines=lines,
+            circles=[]
+        )
 
     # ------------------------------------------------------------------
     # Dispatch table

@@ -14,15 +14,15 @@ Completed:
 ✓ Geometry Primitive Layer
   ✓ Point, Line, Rectangle, Circle, Polyline, DimensionLine, TextAnnotation
 ✓ Shape Library Seeds
-  ✓ RECTANGLE_TEMPLATE + ISLAND_TEMPLATE + VANITY_TEMPLATE + STRAIGHT_KITCHEN_TEMPLATE
-  ✓ SHAPE_REGISTRY: {"rectangle", "island", "vanity", "straight_kitchen"}
+  ✓ RECTANGLE_TEMPLATE + ISLAND_TEMPLATE + VANITY_TEMPLATE + STRAIGHT_KITCHEN_TEMPLATE + L_KITCHEN_TEMPLATE
+  ✓ SHAPE_REGISTRY: {"rectangle", "island", "vanity", "straight_kitchen", "l_kitchen"}
 ✓ Geometry Builder — refactored + extended
   ✓ GeometryBuildResult: rectangles, polylines, lines, circles, dimension_lines, annotations
   ✓ Rectangle handler — 10 smoke tests passing
   ✓ Island handler — 15 smoke tests passing
   ✓ Vanity handler — 10 smoke tests passing (Construction rules, open polylines, circles)
   ✓ Straight Kitchen handler — 7 smoke tests passing (Fabrication rules, multi-piece seams)
-  ✓ Stubs: l_kitchen
+  ✓ L-Kitchen handler — 7 smoke tests passing (Non-linear layouts, corner joins, miter/butt)
 ✓ GeometryModel: optional metadata Dict
 ✓ REST API Layer v1 — 10 API smoke tests passing
   ✓ GET  /api/v1/shapes
@@ -39,18 +39,19 @@ Completed:
   ✓ GET /api/v1/demo/island     (hardcoded 72" × 36" island)
   ✓ GET /api/v1/demo/vanity     (hardcoded 48" × 22" vanity with sink)
   ✓ GET /api/v1/demo/straight-kitchen (hardcoded 180" multi-piece kitchen)
+  ✓ GET /api/v1/demo/l-kitchen  (hardcoded 120" × 96" L-shaped kitchen)
   ✓ X-BuildDesk-Demo header on all demo responses
-  ✓ tools/generate_demo_svg.py CLI (rectangle, island, vanity, straight_kitchen, all)
+  ✓ tools/generate_demo_svg.py CLI (rectangle, island, vanity, straight_kitchen, l_kitchen, all)
   ✓ Saved artifacts: tests/output/rectangle_demo.svg
                      tests/output/island_demo.svg
                      tests/output/vanity_demo.svg
                      tests/output/straight_kitchen_demo.svg
+                     tests/output/l_kitchen_demo.svg
 
-Total smoke tests: 83 / 83 passing.
+Total smoke tests: 90 / 90 passing.
 
 Next:
 
-□ Implement L-Kitchen shape handler (two-piece polyline)
 □ GET /api/v1/geometry/{id} (requires persistence)
 □ Tenant-scoped DB sessions (Phase 2 — Cloud SQL)
 □ PDF output engine — builder package (Phase 2)

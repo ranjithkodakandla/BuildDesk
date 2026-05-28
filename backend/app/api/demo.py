@@ -8,6 +8,7 @@ Endpoints:
     GET /api/v1/demo/island           → SVG of a standard 72" × 36" island
     GET /api/v1/demo/vanity           → SVG of a standard 48" × 22" vanity with sink
     GET /api/v1/demo/straight-kitchen → SVG of a 180" × 26" kitchen (multi-piece)
+    GET /api/v1/demo/l-kitchen        → SVG of a 120" × 96" L-shaped kitchen
 
 Purpose:
     Frictionless demo path. Open a URL in a browser and immediately see
@@ -74,6 +75,15 @@ _DEMO_PAYLOADS = {
         "seam_enabled": True,
         "slab_max_length": 120.0,
         "label": "Main Kitchen Run",
+    },
+    "l_kitchen": {
+        "leg_a_length": 120.0,
+        "leg_b_length": 96.0,
+        "width": 26.0,
+        "thickness": 1.18,
+        "seam_enabled": True,
+        "corner_join_type": "miter",
+        "label": "L-Shape Layout",
     },
 }
 
@@ -181,3 +191,23 @@ def demo_vanity() -> Response:
 def demo_straight_kitchen() -> Response:
     """Render the straight kitchen demo SVG inline."""
     return _svg_response("straight_kitchen")
+
+
+# ---------------------------------------------------------------------------
+# GET /demo/l-kitchen
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/demo/l-kitchen",
+    summary="L-Kitchen demo drawing",
+    description=(
+        "Returns a pre-built SVG of a 120\" × 96\" L-shaped kitchen. "
+        "Demonstrates corner join logic (miter) and seam splitting. "
+        "Open directly in a browser — no request body required."
+    ),
+    responses={200: {"content": {"image/svg+xml": {}}, "description": "Demo SVG"}},
+    status_code=200,
+)
+def demo_l_kitchen() -> Response:
+    """Render the L-kitchen demo SVG inline."""
+    return _svg_response("l_kitchen")

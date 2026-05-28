@@ -207,7 +207,7 @@ MVP shapes:
     island            → implemented
     vanity            → implemented
     straight_kitchen  → implemented
-    l_kitchen         → stub (future)
+    l_kitchen         → implemented
 
 ## Geometry Builder (`services/geometry_builder.py`)
 
@@ -262,6 +262,15 @@ TemplateResolver → ResolvedDimensions
 - Places a dashed `Line` primitive to visually indicate the seam location.
 - Emits specific `DimensionLine`s for each individual piece along the back edge, as well as an overall dimension along the front edge.
 - Emits `seam_count` in the `GeometryModel.metadata` and assigns each piece a specific `piece_num`.
+
+### L-Kitchen shape & Corner Join Rules
+
+- Represents the first non-linear shape (L-shape layout).
+- Emits an open `Polyline` for the layout perimeter, explicitly omitting the two back wall edges.
+- Supports splitting the corner into multiple physical pieces (`GeometryPiece`s) using `corner_join_type` (`miter` or `butt`).
+- `butt`: Creates two rectangles; Leg A owns the corner, Leg B butts into it.
+- `miter`: Bounding boxes for pieces overlap in the corner to represent a 45-degree cut, and a diagonal seam line is drawn.
+- Includes `corner_join_type` and `corner_count` in `GeometryModel.metadata`.
 
 Shape dispatch:
 - `_DISPATCH` dict maps shape_type slug → handler method
