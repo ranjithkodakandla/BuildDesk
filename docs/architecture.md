@@ -96,3 +96,86 @@ Long-term goals:
 * Multi-tenant B2B SaaS support
 * Customer domain / white-label readiness
 * Future interoperability with StoneDesk ecosystem
+
+## Domain Model Layer
+
+Implemented as pure Pydantic models (no DB coupling in Phase 1).
+
+### Model hierarchy
+
+```
+Tenant
+└── Project
+    └── GeometryModel (source of truth)
+        ├── ShapeTemplate (parametric input)
+        └── Package (output artifact)
+```
+
+### Model files
+
+| File | Model | Purpose |
+|---|---|---|
+| models/tenant.py | Tenant | Top-level org; isolates all data |
+| models/project.py | Project | Groups geometry instances per job |
+| models/shape_template.py | ShapeTemplate | Reusable parametric shape definitions |
+| models/geometry.py | GeometryModel | Concrete dimensions + computed outputs |
+| models/package.py | Package | Builder / Installer / Manufacturer PDFs |
+
+### Key design decisions
+
+* All IDs are UUID4 (no auto-increment ints) — portable, non-guessable
+* Geometry is the source of truth; packages are derived outputs
+* ShapeTemplate.tenant_id = None → global system template
+* schema_version on ShapeTemplate and GeometryModel enables future StoneDesk interoperability
+* Package versioning: regeneration creates a new record (no mutation)
+
+## Service Layer
+
+Pure Python services — no HTTP, no DB, no side effects.
+
+### Template Resolver (`services/template_resolver.py`)
+
+Validates and normalises a raw dimension payload against a ShapeTemplate.
+
+Input:
+    ShapeTemplate + Dict[str, Any] (raw user payload)
+
+Output:
+    ResolvedDimensions
+        has_errors: bool
+        dimensions: Dict[str, Any]   ← ready for GeometryModel.dimensions
+        errors: List[ParameterError] ← per-parameter failure messages
+
+Validation rules applied:
+    required     → error if missing and no default_value
+    default      → substitute default_value when parameter is absent
+    type coerce  → cast to declared parameter_type (number/string/boolean/select)
+    min / max    → enforce bounds for number-type parameters
+    options      → reject invalid values for select-type parameters
+    multi-error  → all errors collected in one pass (no fail-fast)
+
+### ShapeParameterType
+
+Added to ShapeParameter in models/shape_template.py.
+
+| Value   | Description                             |
+|---|---|
+| number  | Float dimension; supports min/max       |
+| string  | Free-text annotation                    |
+| boolean | Toggle flag (true/false)                |
+| select  | One value from allowed_options list     |
+
+## Base Model
+
+`BaseDomainModel` (models/base.py) is the shared base for all domain entities.
+
+Provides:
+    created_at     – UTC creation timestamp
+    updated_at     – UTC mutation timestamp
+    schema_version – interoperability + migration safety
+    touch()        – refresh updated_at to current UTC
+
+All five domain models (Tenant, Project, ShapeTemplate, GeometryModel, Package)
+inherit from BaseDomainModel.
+
+
