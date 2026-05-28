@@ -25,27 +25,33 @@ Completed:
   ✓ Rectangle handler + dispatch table
   ✓ 10 smoke tests passing
 ✓ REST API Layer v1
-  ✓ API schemas (backend/app/api/schemas.py)
-    ✓ GeometryRequest, GeometryResponse, ShapeTemplateResponse, etc.
-    ✓ ValidationErrorResponse (domain 422 errors)
-  ✓ Shapes router (backend/app/api/shapes.py)
-    ✓ GET /api/v1/shapes          → list all templates
-    ✓ GET /api/v1/shapes/{type}   → template detail + parameter schema
-    ✓ 404 for unknown shape types
-  ✓ Geometry router (backend/app/api/geometry.py)
-    ✓ POST /api/v1/geometry       → full resolver → builder pipeline
-    ✓ 200 computed geometry + primitives
-    ✓ 422 domain validation errors (missing, range, select)
-    ✓ 404 unknown shape type
-    ✓ 400 unsupported shape handler
-  ✓ Routers registered in main.py (health, shapes, geometry)
-✓ API smoke tests (backend/tests/smoke_api.py)
-  ✓ 10 test cases — all passing (FastAPI TestClient)
+  ✓ GET /api/v1/shapes
+  ✓ GET /api/v1/shapes/{shape_type}
+  ✓ POST /api/v1/geometry
+  ✓ 10 smoke tests passing
+✓ SVG Export Layer v1 (backend/app/exporters/svg_exporter.py)
+  ✓ SvgExporter service
+  ✓ Rectangle rendering (<rect>)
+  ✓ Dimension lines (<line> + arrows + text)
+  ✓ Text annotations (<text>)
+  ✓ Circle rendering (<circle>, dashed)
+  ✓ Polyline/Polygon rendering
+  ✓ Title bar (piece label + area/perimeter)
+  ✓ Arrow marker defs
+  ✓ Coordinate mapping (y-axis flip, scale, margins)
+  ✓ POST /api/v1/export/svg endpoint
+    ✓ Returns image/svg+xml
+    ✓ 422 domain validation errors
+    ✓ 404 unknown shape
+  ✓ 11 smoke tests passing
+  ✓ Sample SVG saved to tests/output/sample_rectangle.svg
+
+Total smoke tests: 41 / 41 passing.
 
 Next:
 
-□ Implement Island shape handler
-□ Implement L-Kitchen shape handler
+□ Implement Island shape handler + template
+□ Implement L-Kitchen shape handler (two-piece polyline)
 □ GET /api/v1/geometry/{id} (requires persistence)
 □ Tenant-scoped DB sessions (Phase 2 — Cloud SQL)
 □ PDF output engine — builder package (Phase 2)

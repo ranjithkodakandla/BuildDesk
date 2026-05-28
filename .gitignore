@@ -70,3 +70,6 @@ logs/
 # ── Generated outputs (future PDF engine) ────────────────────────────────────
 generated/
 outputs/
+
+# Generated test artifacts
+backend/tests/output/

@@ -265,6 +265,45 @@ internal domain models (`models/`). Routers translate between the two layers.
 | 404 | Shape type not found in SHAPE_REGISTRY |
 | 422 | Domain validation error — missing required param, out-of-range, invalid option |
 
+## SVG Export Layer (`exporters/svg_exporter.py`)
+
+Converts a GeometryBuildResult into a self-contained SVG string.
+
+```
+GeometryBuildResult
+        ↓
+    SvgExporter
+        ↓
+    SVG string   ← POST /api/v1/export/svg response body
+```
+
+### Coordinate mapping
+
+Geometry system: origin bottom-left, y-up.
+SVG system: origin top-left, y-down.
+Mapping: `svg_y = svg_height - margin - geometry_y × scale`
+
+### Primitive → SVG element mapping
+
+| Primitive       | SVG element           | Style |
+|---|---|---|
+| Rectangle       | `<rect>`              | fill #f0f4f8, stroke #1a2332 |
+| Line            | `<line>`              | stroke #1a2332 |
+| Circle          | `<circle>`            | no fill, dashed stroke |
+| Polyline        | `<polyline>` / `<polygon>` | depends on closed flag |
+| DimensionLine   | `<line>` × 3 + `<text>` | stroke #4a7fb5, arrowhead markers |
+| TextAnnotation  | `<text>`              | fill #2d5f8a |
+
+### Export endpoint
+
+| Method | Path | Response |
+|---|---|---|
+| POST | `/api/v1/export/svg` | `image/svg+xml` |
+
+Same request body as `POST /geometry`.
+Errors: 404 (unknown shape), 422 (validation), 400 (unimplemented).
+
+
 
 
 
