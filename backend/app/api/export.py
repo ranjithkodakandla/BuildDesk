@@ -36,6 +36,7 @@ from app.api.schemas import (
     ValidationErrorResponse,
 )
 from app.exporters.svg_exporter import SvgExporter
+from app.exporters.pdf_exporter import PdfExporter
 from app.geometry.shapes import SHAPE_REGISTRY
 from app.services.geometry_builder import GeometryBuilder, UnsupportedShapeError
 from app.services.template_resolver import TemplateResolver
@@ -45,7 +46,8 @@ router = APIRouter()
 # Stateless service singletons
 _resolver = TemplateResolver()
 _builder  = GeometryBuilder()
-_exporter = SvgExporter()
+_svg_exporter = SvgExporter()
+_pdf_exporter = PdfExporter()
 
 
 # ---------------------------------------------------------------------------
@@ -125,7 +127,7 @@ def export_svg(
         raise HTTPException(status_code=400, detail=str(exc))
 
     # ── 4. SVG export ───────────────────────────────────────────────────────
-    svg_string = _exporter.export(result)
+    svg_string = _svg_exporter.export(result)
 
     filename   = f"buildesk-{request.shape_type}.svg"
     disposition = f'attachment; filename="{filename}"' if download else f'inline; filename="{filename}"'
@@ -133,6 +135,63 @@ def export_svg(
     return Response(
         content=svg_string,
         media_type="image/svg+xml",
+        headers={
+            "Content-Disposition": disposition,
+            "Cache-Control": "no-store",
+        },
+    )
+
+# ---------------------------------------------------------------------------
+# POST /export/pdf
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/export/pdf",
+    summary="Generate PDF drawing from shape + dimensions",
+    description=(
+        "Accepts the same payload as POST /geometry. "
+        "Runs the full geometry pipeline and returns a 8.5x11 PDF. "
+        "Response Content-Type is application/pdf. "
+        "Add `?download=true` to receive the PDF as a file attachment."
+    ),
+    responses={
+        200: {"content": {"application/pdf": {}}, "description": "PDF drawing"},
+        404: {"description": "Shape type not found in registry"},
+        422: {"description": "Dimension validation error (domain-level)"},
+        400: {"description": "Shape type not yet implemented"},
+    },
+    status_code=200,
+)
+def export_pdf(request: GeometryRequest, download: bool = False) -> Response:
+    template = SHAPE_REGISTRY.get(request.shape_type.lower())
+    if not template:
+        raise HTTPException(status_code=404, detail=f"Shape '{request.shape_type}' not found.")
+
+    resolve_res = _resolver.resolve(template, request.dimensions)
+    if resolve_res.has_errors:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "Validation failed", "errors": resolve_res.errors},
+        )
+
+    try:
+        result = _builder.build(
+            template=template,
+            resolved=resolve_res,
+            project_id=request.project_id,
+            tenant_id=request.tenant_id,
+        )
+    except UnsupportedShapeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    pdf_bytes = _pdf_exporter.export(result, request.shape_type.lower())
+
+    filename = f"buildesk-{request.shape_type}.pdf"
+    disposition = f'attachment; filename="{filename}"' if download else f'inline; filename="{filename}"'
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
         headers={
             "Content-Disposition": disposition,
             "Cache-Control": "no-store",

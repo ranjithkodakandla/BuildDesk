@@ -352,17 +352,34 @@ Errors: 404 (unknown shape), 422 (validation), 400 (unimplemented).
 
 Query param `?download=true` switches `Content-Disposition` from `inline` to `attachment`.
 
+## PDF Export Layer (`exporters/pdf_exporter.py`)
+
+A production-style layout exporter leveraging `reportlab` to produce 8.5x11 landscape printable PDFs.
+
+- Uses `GeometryBuildResult` directly to map primitives onto a PDF Canvas.
+- Automatically calculates the bounding box of all geometric primitives, applies 10% padding, and sets the scale so the drawing fits perfectly within the margins.
+- Injects a standard BuildDesk Title Block and metadata summary block into the layout.
+
+### Export endpoint
+
+| Method | Path | Response |
+|---|---|---|
+| POST | `/api/v1/export/pdf` | `application/pdf` |
+
+Identical behavior and inputs to the SVG endpoint, but produces a formatted PDF document. Support for `?download=true` is included.
+
 ## Demo Workflow (`api/demo.py`, `tools/generate_demo_svg.py`)
 
 Frictionless demo paths — no request body or server required.
 
-### Three demo paths
+### Demo paths
 
 | Path | Method | Description |
 |---|---|---|
-| Browser URL | `GET /api/v1/demo/rectangle` | Opens SVG directly in browser |
-| Browser URL | `GET /api/v1/demo/island` | Opens SVG directly in browser |
+| Browser URL | `GET /api/v1/demo/{shape}` | Opens SVG directly in browser |
+| Browser URL | `GET /api/v1/demo/pdf/{shape}` | Opens printable PDF in browser |
 | CLI tool | `python tools/generate_demo_svg.py all` | Writes SVG files to `tests/output/` |
+| CLI tool | `python tools/generate_demo_pdf.py all` | Writes PDF files to `tests/output/` |
 
 ### Demo payloads (hardcoded)
 

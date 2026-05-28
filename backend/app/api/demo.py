@@ -25,6 +25,7 @@ from fastapi import APIRouter
 from fastapi.responses import Response
 
 from app.exporters.svg_exporter import SvgExporter
+from app.exporters.pdf_exporter import PdfExporter
 from app.geometry.shapes import SHAPE_REGISTRY
 from app.services.geometry_builder import GeometryBuilder
 from app.services.template_resolver import TemplateResolver
@@ -37,7 +38,8 @@ router = APIRouter()
 
 _resolver = TemplateResolver()
 _builder  = GeometryBuilder()
-_exporter = SvgExporter(scale=4.0)
+_svg_exporter = SvgExporter(scale=4.0)
+_pdf_exporter = PdfExporter()
 
 # Stable demo UUIDs — same every request so responses are deterministic
 _DEMO_PROJECT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -99,7 +101,7 @@ def _build_demo_svg(shape_type: str) -> str:
         project_id=_DEMO_PROJECT_ID,
         tenant_id=_DEMO_TENANT_ID,
     )
-    return _exporter.export(result)
+    return _svg_exporter.export(result)
 
 
 def _svg_response(shape_type: str) -> Response:
@@ -109,6 +111,29 @@ def _svg_response(shape_type: str) -> Response:
         media_type="image/svg+xml",
         headers={
             "Content-Disposition": f'inline; filename="demo-{shape_type}.svg"',
+            "Cache-Control": "no-store",
+            "X-BuildDesk-Demo": "true",
+        },
+    )
+
+
+def _pdf_response(shape_type: str) -> Response:
+    """Helper to generate PDF for a demo payload."""
+    payload = _DEMO_PAYLOADS.get(shape_type)
+    template = SHAPE_REGISTRY.get(shape_type)
+    resolved = _resolver.resolve(template, payload)
+    result   = _builder.build(
+        template=template,
+        resolved=resolved,
+        project_id=_DEMO_PROJECT_ID,
+        tenant_id=_DEMO_TENANT_ID,
+    )
+    pdf_bytes = _pdf_exporter.export(result, shape_type)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="demo-{shape_type}.pdf"',
             "Cache-Control": "no-store",
             "X-BuildDesk-Demo": "true",
         },
@@ -211,3 +236,27 @@ def demo_straight_kitchen() -> Response:
 def demo_l_kitchen() -> Response:
     """Render the L-kitchen demo SVG inline."""
     return _svg_response("l_kitchen")
+
+# ---------------------------------------------------------------------------
+# PDF Endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/demo/pdf/rectangle", responses={200: {"content": {"application/pdf": {}}}})
+def demo_pdf_rectangle() -> Response:
+    return _pdf_response("rectangle")
+
+@router.get("/demo/pdf/island", responses={200: {"content": {"application/pdf": {}}}})
+def demo_pdf_island() -> Response:
+    return _pdf_response("island")
+
+@router.get("/demo/pdf/vanity", responses={200: {"content": {"application/pdf": {}}}})
+def demo_pdf_vanity() -> Response:
+    return _pdf_response("vanity")
+
+@router.get("/demo/pdf/straight-kitchen", responses={200: {"content": {"application/pdf": {}}}})
+def demo_pdf_straight_kitchen() -> Response:
+    return _pdf_response("straight_kitchen")
+
+@router.get("/demo/pdf/l-kitchen", responses={200: {"content": {"application/pdf": {}}}})
+def demo_pdf_l_kitchen() -> Response:
+    return _pdf_response("l_kitchen")

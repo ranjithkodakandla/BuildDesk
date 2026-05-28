@@ -32,6 +32,10 @@ Completed:
   ✓ POST /api/v1/export/svg
     ✓ Default: Content-Disposition inline (browser-viewable)
     ✓ ?download=true: Content-Disposition attachment (file download)
+  ✓ POST /api/v1/export/pdf
+    ✓ ReportLab integration
+    ✓ Scale-to-fit drawing area
+    ✓ Default inline vs ?download=true attachment
 ✓ SVG Export Layer v1 — 11 SVG smoke tests passing
   ✓ SvgExporter — renders all 6 primitive types
   ✓ Proper field access; polyline-aware bounding box
@@ -41,22 +45,23 @@ Completed:
   ✓ GET /api/v1/demo/vanity     (hardcoded 48" × 22" vanity with sink)
   ✓ GET /api/v1/demo/straight-kitchen (hardcoded 180" multi-piece kitchen)
   ✓ GET /api/v1/demo/l-kitchen  (hardcoded 120" × 96" L-shaped kitchen)
+  ✓ GET /api/v1/demo/pdf/*      (corresponding PDF demo endpoints)
   ✓ X-BuildDesk-Demo header on all demo responses
   ✓ tools/generate_demo_svg.py CLI (rectangle, island, vanity, straight_kitchen, l_kitchen, all)
-  ✓ Saved artifacts: tests/output/rectangle_demo.svg
-                     tests/output/island_demo.svg
-                     tests/output/vanity_demo.svg
-                     tests/output/straight_kitchen_demo.svg
-                     tests/output/l_kitchen_demo.svg
+  ✓ tools/generate_demo_pdf.py CLI
+  ✓ Saved artifacts: tests/output/*_demo.svg
+                     tests/output/*_demo.pdf
 ✓ Persistence Foundation Layer (Pre-DB) — 4 smoke tests passing
   ✓ Repository pattern defined via Protocols (Geometry, Project, Tenant)
   ✓ In-Memory dict/UUID implementations
   ✓ FastAPI Dependency Injection (dependencies.py)
+✓ PDF Export Layer v1 — 4 smoke tests passing
+  ✓ PdfExporter class (reportlab)
+  ✓ 8.5x11 scale-to-fit layout
 
-Total smoke tests: 94 / 94 passing.
+Total smoke tests: 98 / 98 passing.
 
 Next:
 
 □ Tenant-scoped DB sessions + SQLAlchemy (Phase 2 — Cloud SQL)
-□ PDF output engine — builder package (Phase 2)
 □ Frontend React integration
