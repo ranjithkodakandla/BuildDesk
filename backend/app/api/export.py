@@ -27,6 +27,8 @@ HTTP status codes:
 
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 
@@ -40,7 +42,9 @@ from app.exporters.pdf_exporter import PdfExporter
 from app.geometry.shapes import SHAPE_REGISTRY
 from app.services.geometry_builder import GeometryBuilder, UnsupportedShapeError
 from app.services.template_resolver import TemplateResolver
-from app.tenant_context import get_current_tenant
+from app.tenant_context import get_current_tenant as _legacy_tenant  # kept for type hints only
+from app.auth.dependencies import get_current_tenant, require_active_user
+from app.models.user import User
 from fastapi import Depends
 
 router = APIRouter()
@@ -79,6 +83,7 @@ _pdf_exporter = PdfExporter()
 )
 def export_svg(
     request: GeometryRequest,
+    current_user: User = Depends(require_active_user),
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     download: bool = Query(
         default=False,
@@ -167,6 +172,7 @@ def export_svg(
 )
 def export_pdf(
     request: GeometryRequest,
+    current_user: User = Depends(require_active_user),
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     download: bool = False
 ) -> Response:

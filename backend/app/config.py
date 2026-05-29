@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./builddesk.db"
     use_sql_repository: bool = False
 
+    # JWT Authentication
+    jwt_secret_key: str = "CHANGE-ME-IN-PRODUCTION-use-openssl-rand-hex-32"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60
+
     # GCP (Phase 2 / 3)
     gcp_project_id: str = ""
     gcp_region: str = "us-central1"

@@ -120,9 +120,25 @@ Completed:
   ✓ Validated persistence across container redeployments
   ✓ Validated tenant isolation and export capabilities with the live database
 
-Total smoke tests: 110 / 110 passing.
+✓ Authentication Foundation Layer v1
+  ✓ User domain model (app/models/user.py) with tenant scoping
+  ✓ UserRecord SQLAlchemy model (users table) + Alembic migration (d38eab03b1d1)
+  ✓ Password hashing/verification via passlib/bcrypt (app/auth/password.py)
+  ✓ JWT token creation/validation via python-jose HS256 (app/auth/jwt.py)
+  ✓ UserRepository abstraction + InMemory + SQL implementations
+  ✓ Auth dependency layer: get_current_user, require_active_user, get_current_tenant (app/auth/dependencies.py)
+  ✓ Auth API: POST /auth/register, POST /auth/login, GET /auth/me (app/api/auth.py)
+  ✓ Protected routes: POST/GET /geometry, POST /export/svg, POST /export/pdf
+  ✓ Demo routes remain public (no auth required)
+  ✓ Tenant isolation enforced via JWT tid claim
+  ✓ X-Tenant-ID header supported for register/login flow (tenant scoping context)
+  ✓ Alembic migration applied to Cloud SQL PostgreSQL
+  ✓ Live validation on Cloud Run: register, login, /me, protected route, 401 enforcement
+
+Total smoke tests: 131 / 131 passing (21 new auth tests).
 
 Next:
 
 □ Async Engine Migration (asyncpg)
 □ Frontend React integration
+□ JWT refresh token flow

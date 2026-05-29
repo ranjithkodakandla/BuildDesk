@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Environment
+.env
+.env.local
+
+# Database
+*.db
+*.sqlite
+
+# Test output artifacts
+test.pdf
+test.svg
+
+# GCP tooling (local binaries)
+cloud-sql-proxy
+cloud_sql_proxy
+
+# Seed / one-off scripts
+seed.py
+
+# IDE
+.idea/
+.vscode/
+*.swp

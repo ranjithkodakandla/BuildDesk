@@ -41,7 +41,8 @@ from app.services.geometry_builder import GeometryBuilder, UnsupportedShapeError
 from app.services.template_resolver import TemplateResolver
 from app.repositories.geometry_repository import GeometryRepository
 from app.dependencies import get_geometry_repository
-from app.tenant_context import get_current_tenant
+from app.auth.dependencies import get_current_tenant, require_active_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -75,6 +76,7 @@ _builder  = GeometryBuilder()
 )
 def create_geometry(
     request: GeometryRequest,
+    current_user: User = Depends(require_active_user),
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     repo: GeometryRepository = Depends(get_geometry_repository),
 ) -> GeometryResponse:
@@ -196,6 +198,7 @@ def create_geometry(
 )
 def get_geometry(
     geometry_id: uuid.UUID,
+    current_user: User = Depends(require_active_user),
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     repo: GeometryRepository = Depends(get_geometry_repository),
 ) -> GeometryResponse:

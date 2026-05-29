@@ -10,6 +10,9 @@ Architecture: Multi-tenant, backend-first, GCP Cloud Run target.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.security import HTTPBearer
+
+from app.api.auth import router as auth_router
 from app.api.demo import router as demo_router
 from app.api.export import router as export_router
 from app.api.geometry import router as geometry_router
@@ -51,7 +54,8 @@ def create_app() -> FastAPI:
         title="BuildDesk API",
         description=(
             "Geometry-driven B2B SaaS platform for builders, "
-            "construction companies, and surface contractors."
+            "construction companies, and surface contractors. "
+            "Use the Authorize button to supply a Bearer JWT token."
         ),
         version=settings.app_version,
         docs_url="/docs",
@@ -77,6 +81,7 @@ def create_app() -> FastAPI:
 
     application.include_router(health_router,   prefix="/api/v1", tags=["health"])
     application.include_router(shapes_router,   prefix="/api/v1", tags=["shapes"])
+    application.include_router(auth_router,     prefix="/api/v1", tags=["auth"])
     application.include_router(geometry_router, prefix="/api/v1", tags=["geometry"])
     application.include_router(export_router,   prefix="/api/v1", tags=["export"])
     application.include_router(demo_router,     prefix="/api/v1", tags=["demo"])
