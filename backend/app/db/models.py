@@ -345,6 +345,7 @@ class ProjectPackageRecord(Base):
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="draft")
     # Reserved for Phase 6 GCS upload
     storage_reference: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True, default=None)
+    file_size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
     generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
     page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

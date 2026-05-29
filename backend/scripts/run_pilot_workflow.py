@@ -299,16 +299,34 @@ def run():
         assert b"<svg" in svg_res.content
 
     # 7. Generate Package
-    print("7. Generating PDF Package...")
+    print("7. Generating PDF Package (Async)...")
     pkg_res = client.post(f"/api/v1/projects/{project_id}/package/generate", json={
         "version": "Rev 1 - Pilot",
         "issued_by": "BuildDesk Pilot Script"
     }, headers=headers)
     assert pkg_res.status_code == 200, pkg_res.text
 
+    # Poll until ready
+    import time
+    print("   Polling for completion...", end="")
+    max_retries = 30
+    for _ in range(max_retries):
+        status_res = client.get(f"/api/v1/projects/{project_id}/package/status", headers=headers)
+        if status_res.json()["status"] == "ready":
+            print(" Done!")
+            break
+        elif status_res.json()["status"] == "generation_failed":
+            print(" Failed!")
+            sys.exit(1)
+        print(".", end="", flush=True)
+        time.sleep(1)
+    else:
+        print(" Timeout!")
+        sys.exit(1)
+
     # 8. Download PDF Artifact
     print("8. Saving PDF Artifact...")
-    pdf_res = client.get(f"/api/v1/projects/{project_id}/package/pdf", headers=headers)
+    pdf_res = client.get(f"/api/v1/projects/{project_id}/package/download", headers=headers)
     assert pdf_res.status_code == 200
 
     out_dir = os.path.join(os.path.dirname(__file__), "..", "..", "artifacts")

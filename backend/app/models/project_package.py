@@ -105,6 +105,7 @@ class ProjectPackage(BaseDomainModel):
     status:            ProjectPackageStatus     = Field(default=ProjectPackageStatus.DRAFT)
     # Reserved for Phase 6 GCS upload (gs://... blob path or signed URL)
     storage_reference: Optional[str]            = Field(default=None, max_length=1000)
+    file_size_bytes:   Optional[int]            = Field(default=None)
     generated_at:      Optional[datetime]       = Field(default=None)
     page_count:        int                      = Field(default=0)
     pages:             List[PackagePage]        = Field(default_factory=list)

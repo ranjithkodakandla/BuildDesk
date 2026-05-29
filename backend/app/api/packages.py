@@ -88,10 +88,14 @@ def _map_package(pkg) -> PackageResponse:
 # Package generation endpoints
 # ---------------------------------------------------------------------------
 
+from fastapi import APIRouter, Depends, HTTPException, Response, BackgroundTasks
+from app.tasks.package_generation import generate_pdf_background
+
 @router.post("/projects/{project_id}/package/generate", response_model=PackageResponse)
 def generate_package(
     project_id: uuid.UUID,
     body: PackageGenerateRequest,
+    background_tasks: BackgroundTasks,
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     _user: User = Depends(require_active_user),
     svc: PackageGeneratorService = Depends(get_package_service),
@@ -99,7 +103,7 @@ def generate_package(
     """
     Generate a complete multi-page fabrication package for the project.
     Traverses: Project → Units → UnitTypes → Assemblies → Parts → Pages.
-    Returns the package manifest (page list). PDF download is a separate endpoint.
+    Returns the package manifest and queues the PDF generation in the background.
     """
     try:
         package = svc.generate(
@@ -110,6 +114,15 @@ def generate_package(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+        
+    # Queue background task for PDF rendering
+    background_tasks.add_task(
+        generate_pdf_background,
+        tenant_id=tenant_id,
+        project_id=project_id,
+        package_id=package.package_id
+    )
+        
     return _map_package(package)
 
 
@@ -127,64 +140,43 @@ def get_package_status(
     return _map_package(package)
 
 
+from fastapi.responses import FileResponse
+
+@router.get("/projects/{project_id}/package/download")
 @router.get("/projects/{project_id}/package/pdf")
 def download_package_pdf(
     project_id: uuid.UUID,
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     _user: User = Depends(require_active_user),
     svc: PackageGeneratorService = Depends(get_package_service),
-    fab_repo: FabricationRepository = Depends(get_fab_repo),
-    hierarchy_repo: ProjectHierarchyRepository = Depends(get_hierarchy_repo),
 ):
     """
-    Generate and stream the full fabrication package PDF.
-    The PDF is built on-the-fly from the latest saved package manifest + live data.
+    Download the generated PDF package.
+    Redirects to signed URL or serves local file if in fallback mode.
     """
-    # 1. Get the latest package to confirm it exists
     package = svc.get_latest_for_project(tenant_id, project_id)
     if not package:
-        raise HTTPException(
-            status_code=404,
-            detail="No package found. Call POST /package/generate first."
+        raise HTTPException(status_code=404, detail="No package found. Call POST /package/generate first.")
+
+    if package.status != "ready" or not package.storage_reference:
+        raise HTTPException(status_code=400, detail=f"Package is not ready yet. Status: {package.status}")
+
+    # For local storage fallback, we return a FileResponse
+    from app.services.cloud_storage import CloudStorageService
+    storage_svc = CloudStorageService()
+    url_or_path = storage_svc.get_download_url(package.storage_reference)
+    
+    if package.storage_reference.startswith("local://"):
+        return FileResponse(
+            path=url_or_path,
+            media_type="application/pdf",
+            filename=f"package_{package.version}.pdf",
+            content_disposition_type="inline"
         )
-
-    # 2. Load project
-    project = hierarchy_repo.get_project(tenant_id, project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found.")
-
-    # 3. Build UnitTypeGroups and assemblies map for the exporter
-    groups = svc.get_unit_type_groups(tenant_id, project_id)
-    all_assemblies = fab_repo.list_assemblies(tenant_id, project_id)
-    summary = svc.get_summary(tenant_id, project_id)
-
-    # Build assemblies map: unit_type_id::assembly_type → [Assembly, ...]
-    assemblies_by_type: Dict[str, List[Assembly]] = {}
-    for asm in all_assemblies:
-        if asm.unit_type_id:
-            # Load full assembly (with parts)
-            full_asm = fab_repo.get_assembly(tenant_id, asm.assembly_id)
-            if full_asm:
-                key = f"{asm.unit_type_id}::{asm.assembly_type.value}"
-                assemblies_by_type.setdefault(key, []).append(full_asm)
-
-    # 4. Generate PDF bytes
-    exporter = PackagePdfExporter()
-    pdf_bytes = exporter.export(
-        project=project,
-        unit_type_groups=groups,
-        assemblies_by_type=assemblies_by_type,
-        summary=summary,
-        version=package.version,
-    )
-
-    safe_name = project.name.replace(" ", "_").replace("/", "-")
-    filename = f"{safe_name}_v{package.version}.pdf"
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{filename}"'},
-    )
+    
+    # If it was a real signed URL, we would return a RedirectResponse
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=url_or_path)
 
 
 # ---------------------------------------------------------------------------

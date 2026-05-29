@@ -630,5 +630,25 @@ During the Phase 6 Pilot, the entire architecture (Frontend + Backend + DB) was 
 3. **SVG Fidelity:** Generating the SVG on the backend using the *exact same* scaling math as the PDF ensures total WYSIWYG parity.
 
 ### Required Architecture Adjustments
-1. **Synchronous Generation Bottleneck:** Generating a 40-unit PDF synchronously over HTTP is viable (takes ~2 seconds), but a 300-unit package will cause HTTP timeouts. The PDF generation pipeline **must** be moved to a background worker queue, with the final artifact uploaded to Cloud Storage (GCS).
+1. **Synchronous Generation Bottleneck:** Generating a 40-unit PDF synchronously over HTTP is viable (takes ~2 seconds), but a 300-unit package will cause HTTP timeouts. The PDF generation pipeline **must** be moved to a background worker queue, with the final artifact uploaded to Cloud Storage (GCS). *(Resolved in Phase 7)*
 2. **UI Bulk Tools:** The React frontend requires bulk mutation tools (e.g., "Assign Units 101-108 to A1") rather than single-record forms to handle real-world scale.
+
+---
+
+## Asynchronous Package Workflow & Storage (Phase 7)
+
+To solve the HTTP timeout bottleneck at scale, the package generation pipeline was decoupled into an asynchronous job loop.
+
+### 1. Job Lifecycle
+- `POST /projects/{id}/package/generate`: Validates the request, creates a `ProjectPackage` record in the `generating` state, and immediately returns `202 Accepted` (or a `200 OK` manifest) while pushing the heavy PDF export task to FastAPI's `BackgroundTasks`.
+- `GET /projects/{id}/package/status`: Queried periodically by the frontend to watch for transition from `generating` to `ready` or `generation_failed`.
+
+### 2. Artifact Storage Architecture
+- A new `CloudStorageService` persists the final `pdf_bytes` outside of the application instance.
+- **Local Fallback:** Writes to `artifacts/mock_gcs/` and returns a `local://` URI.
+- **Cloud Mode:** Writes directly to a Google Cloud Storage bucket and returns a `gs://` URI.
+- The `GET /projects/{id}/package/download` endpoint abstracts this storage URI, returning a signed redirect or serving the local file directly.
+
+### 3. Scaling Assessment & Thresholds
+- **Current:** FastAPI `BackgroundTasks` executes in the same Python process loop. This perfectly handles 5-10 concurrent package generations of <1000 units.
+- **Threshold for Distributed Workers (Celery/Kafka):** We should ONLY move to distributed workers if memory pressure on the main FastAPI containers exceeds limits during PDF rendering, or if we need to scale PDF generation horizontally independent of the API nodes. For now, `BackgroundTasks` is robust, simple, and strictly adheres to avoiding premature infrastructure complexity.

@@ -86,11 +86,14 @@ class PackageRepository:
         self.session.commit()
         return self.get_package(package.tenant_id, package.package_id)
 
-    def get_package(self, tenant_id: uuid.UUID, package_id: uuid.UUID) -> Optional[ProjectPackage]:
-        r = self.session.query(ProjectPackageRecord).filter(
+    def _get_record(self, tenant_id: uuid.UUID, package_id: uuid.UUID) -> Optional[ProjectPackageRecord]:
+        return self.session.query(ProjectPackageRecord).filter(
             ProjectPackageRecord.id == str(package_id),
             ProjectPackageRecord.tenant_id == str(tenant_id),
         ).first()
+
+    def get_package(self, tenant_id: uuid.UUID, package_id: uuid.UUID) -> Optional[ProjectPackage]:
+        r = self._get_record(tenant_id, package_id)
         if not r:
             return None
         pages = self.session.query(PackagePageRecord).filter(

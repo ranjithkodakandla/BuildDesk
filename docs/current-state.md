@@ -235,8 +235,14 @@ Corrected roadmap:
 - **Usability & Gap Review:** Documented findings in `docs/pilot-validation.md`. The domain model passed the confidence test flawlessly. Gaps were identified in frontend bulk-operations and backend synchronous PDF generation.
 - **Architecture Validation:** Confirmed that the current architecture strongly supports the domain, but validated that asynchronous processing for large PDFs is a strict requirement for the next phase.
 
-Deferred (pending Phase 7):
-  □ Background PDF Generation (Celery / BackgroundTasks)
-  □ Cloud Storage (GCS) for PDF persistence
-  □ Bulk-Unit Creation UI (Frontend)
+### Phase 7: Asynchronous Package Workflow & Artifact Storage (✅ Complete)
+**Goal:** Make package generation production-safe by moving it to the background and storing the artifact.
+- **Background Tasks:** Refactored `POST /projects/{id}/package/generate` to enqueue PDF generation via FastAPI `BackgroundTasks`.
+- **Artifact Storage:** Implemented `CloudStorageService` to abstract saving PDF files. (Currently defaults to local mock storage, instantly ready for GCS via `gs://`).
+- **Database Schema:** Added `file_size_bytes` to `ProjectPackageRecord`.
+- **Frontend Upgrade:** Updated `PackagesPanel.tsx` to actively poll `/status` when the package is in the `generating` state.
+- **Pilot Revalidation:** The `run_pilot_workflow.py` script successfully executed against the new asynchronous architecture, validating the exact same output without blocking the main HTTP loop.
+
+Deferred (pending Phase 8):
   □ asyncpg migration (Deferred)
+  □ Distributed Workers (Celery/Kafka) - *Only when scale dictates (>1000 concurrent units)*
