@@ -194,11 +194,21 @@ Corrected roadmap:
 - **Variant Logic:** Handled MIR, ADA, LEFT, RIGHT permutations at the Assembly and Unit levels.
 - **Additive Migration:** Preserved legacy single-shape records while building new normalized tables.
 - **Fabrication API:** Exposed full lifecycle CRUD endpoints under `/api/v1/assemblies/` with JWT auth and tenant scoping.
-  Phase 4: Advanced Drawing Logic (cutouts, holes, edges, seams)
-  Phase 5: UI Realignment to real workflow
 
-Blocked until Phase 3 designed:
+### Phase 3: Project Package Generator (✅ Complete)
+**Goal:** Generate BuildDesk's first real multi-page fabrication package PDF.
+- **Domain Models:** `ProjectPackage`, `PackagePage`, `ProjectPackageStatus`, `PackagePageType`, `UnitTypeGroup`, `PackageSummary` (`app/models/project_package.py`)
+- **ORM Records:** `ProjectPackageRecord`, `PackagePageRecord` (additive to `app/db/models.py`)
+- **Alembic Migration:** `c3d4e5f6g7h8_add_project_packages.py` — `project_packages` + `package_pages` tables
+- **PackageRepository:** Tenant-scoped CRUD with atomic page replacement (`app/repositories/package_repository.py`)
+- **PackageGeneratorService:** Full hierarchy traversal, UnitTypeGroup building, variant-aware page manifest, summary computation (`app/services/package_generator_service.py`)
+- **PackagePdfExporter:** Multi-page ReportLab PDF: cover, type sheets, assembly drawing pages, summary (`app/exporters/package_pdf_exporter.py`)
+- **AssemblySvgExporter:** Single-assembly SVG with parts, dims, cutouts, holes, splashes (`app/exporters/assembly_svg_exporter.py`)
+- **API Router:** `POST /api/v1/projects/{id}/package/generate`, `GET .../package/status`, `GET .../package/pdf`, `GET /api/v1/assemblies/{id}/preview/svg` (`app/api/packages.py`)
+- **Tests:** 20 new tests — 54 / 54 passing (all Phase 1 + 2 + 3)
+
+Deferred (pending Phase 4):
   □ asyncpg migration
-  □ Frontend feature expansion
-  □ Generic geometry demos
-  □ Generic dashboard CRUD
+  □ Frontend realignment to fabrication workflow
+  □ Advanced drawing logic (cutout outlines, hole markers as vector, edge indicators)
+  □ Cloud Storage (GCS) for PDF persistence

@@ -20,6 +20,7 @@ from app.api.fabrication import router as fabrication_router
 from app.api.geometry import router as geometry_router
 from app.api.health import router as health_router
 from app.api.hierarchy import router as hierarchy_router
+from app.api.packages import router as packages_router
 from app.api.shapes import router as shapes_router
 from app.config import get_settings
 
@@ -88,6 +89,8 @@ def create_app() -> FastAPI:
     application.include_router(hierarchy_router, prefix="/api/v1", tags=["hierarchy"])
     # Phase 2: Fabrication Domain (Assemblies)
     application.include_router(fabrication_router, prefix="/api/v1", tags=["fabrication"])
+    # Phase 3: Package Generator
+    application.include_router(packages_router,  prefix="/api/v1", tags=["packages"])
     # Legacy geometry endpoints (deprecated, kept for backward compatibility)
     application.include_router(shapes_router,    prefix="/api/v1", tags=["shapes (legacy)"])
     application.include_router(geometry_router,  prefix="/api/v1", tags=["geometry (legacy)"])

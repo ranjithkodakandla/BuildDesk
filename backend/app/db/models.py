@@ -321,3 +321,49 @@ class EdgeTreatmentRecord(Base):
     length: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=None)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+# ---------------------------------------------------------------------------
+# Project Packages  (Phase 3)
+# ---------------------------------------------------------------------------
+
+class ProjectPackageRecord(Base):
+    """
+    Persisted fabrication package for one project.
+    One package = one multi-page PDF set.
+    Packages are immutable once status='ready'.
+    """
+    __tablename__ = "project_packages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
+    version: Mapped[str] = mapped_column(String(50), nullable=False, default="1.0")
+    issued_by: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, default=None)
+    issued_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    # draft | generating | ready | generation_failed | archived
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="draft")
+    # Reserved for Phase 6 GCS upload
+    storage_reference: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True, default=None)
+    generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class PackagePageRecord(Base):
+    """
+    A single page record within a ProjectPackage.
+    page_type: cover | type_sheet | assembly_drawing | summary
+    content_ref: opaque string used by PackagePdfExporter to locate content.
+    """
+    __tablename__ = "package_pages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    package_id: Mapped[str] = mapped_column(String(36), ForeignKey("project_packages.id"), nullable=False)
+    page_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    # cover | type_sheet | assembly_drawing | summary
+    page_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    content_ref: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
