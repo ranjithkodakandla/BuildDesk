@@ -71,6 +71,47 @@ class FabricationService:
         self._validate_assembly_structure(assembly)
         return self._fab_repo.save_assembly(assembly)
 
+    def duplicate_assembly(self, tenant_id: uuid.UUID, assembly_id: uuid.UUID, new_name: Optional[str] = None, new_unit_type_id: Optional[uuid.UUID] = None, variant: Optional[UnitVariant] = None) -> Assembly:
+        """Clones an existing assembly and all its parts, returning the new one."""
+        source = self.get_assembly(tenant_id, assembly_id)
+        if not source:
+            raise ValueError("Source assembly not found.")
+            
+        import copy
+        new_assembly = copy.deepcopy(source)
+        new_assembly.assembly_id = uuid.uuid4()
+        
+        if new_name:
+            new_assembly.name = new_name
+        else:
+            new_assembly.name = f"{source.name} (Copy)"
+            
+        if new_unit_type_id:
+            new_assembly.unit_type_id = new_unit_type_id
+            
+        if variant:
+            new_assembly.variant = variant
+            
+        # Give parts and sub-components new IDs
+        for part in new_assembly.parts:
+            part.part_id = uuid.uuid4()
+            for edge in part.edges:
+                edge.edge_id = uuid.uuid4()
+            for cutout in part.cutouts:
+                cutout.cutout_id = uuid.uuid4()
+            for hole in part.holes:
+                hole.hole_id = uuid.uuid4()
+            for splash in part.splashes:
+                splash.splash_id = uuid.uuid4()
+                
+        for note in new_assembly.notes:
+            note.note_id = uuid.uuid4()
+                
+        if new_assembly.variant == UnitVariant.MIRROR:
+            self._apply_mirror_transform(new_assembly)
+            
+        return self._fab_repo.save_assembly(new_assembly)
+
     def delete_assembly(self, tenant_id: uuid.UUID, assembly_id: uuid.UUID) -> bool:
         return self._fab_repo.delete_assembly(tenant_id, assembly_id)
 

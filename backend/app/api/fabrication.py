@@ -36,14 +36,22 @@ from app.auth.dependencies import get_current_tenant, require_active_user
 from app.dependencies import get_db
 from app.models.fabrication import (
     Assembly,
+    AssemblyType,
     Cutout,
+    CutoutType,
     Dimensions,
     EdgeTreatment,
+    EdgeType,
     FabricationNote,
     Hole,
+    MountType,
     Part,
+    PartType,
+    Position,
     Splash,
+    SplashType,
 )
+from app.models.hierarchy import UnitVariant
 from app.models.user import User
 from app.repositories.fabrication_repository import FabricationRepository
 from app.repositories.hierarchy_repository import ProjectHierarchyRepository
@@ -254,6 +262,28 @@ def get_assembly(
     if not assembly:
         raise HTTPException(status_code=404, detail="Assembly not found.")
     return _map_assembly_out(assembly)
+
+from app.api.fabrication_schemas import AssemblyDuplicateRequest
+
+@router.post("/{assembly_id}/duplicate", response_model=AssemblyResponse, status_code=201)
+def duplicate_assembly(
+    assembly_id: uuid.UUID,
+    body: AssemblyDuplicateRequest,
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
+    _user: User = Depends(require_active_user),
+    svc: FabricationService = Depends(get_fabrication_service),
+):
+    try:
+        new_assembly = svc.duplicate_assembly(
+            tenant_id=tenant_id,
+            assembly_id=assembly_id,
+            new_name=body.new_name,
+            new_unit_type_id=body.new_unit_type_id,
+            variant=UnitVariant(body.variant.value) if body.variant else None,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return _map_assembly_out(new_assembly)
 
 
 @router.put("/{assembly_id}", response_model=AssemblyResponse)

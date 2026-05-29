@@ -652,3 +652,17 @@ To solve the HTTP timeout bottleneck at scale, the package generation pipeline w
 ### 3. Scaling Assessment & Thresholds
 - **Current:** FastAPI `BackgroundTasks` executes in the same Python process loop. This perfectly handles 5-10 concurrent package generations of <1000 units.
 - **Threshold for Distributed Workers (Celery/Kafka):** We should ONLY move to distributed workers if memory pressure on the main FastAPI containers exceeds limits during PDF rendering, or if we need to scale PDF generation horizontally independent of the API nodes. For now, `BackgroundTasks` is robust, simple, and strictly adheres to avoiding premature infrastructure complexity.
+
+---
+
+## Bulk Authoring Workflow (Phase 8)
+
+To support realistic multifamily projects (100–300+ units), the application provides bulk creation capabilities instead of standard row-by-row CRUD.
+
+### 1. Hierarchy Productivity Patterns
+- **Bulk Unit Engine:** The `POST /projects/{id}/units/bulk` endpoint generates units programmatically. It accepts a range (e.g. `start_number=1`, `end_number=20`), a prefix (e.g. `10`), and an increment, automatically constructing patterns like `101, 102, 103...`.
+- **Assembly Duplication:** `POST /assemblies/{id}/duplicate` enables a deep-copy of a complex assembly configuration, fully regenerating UUIDs for all underlying parts, edges, holes, and splashes, and optionally assigning a mirrored variant.
+- **Variant Helpers:** The system accommodates base types (`A1`) and derived variants (`A1-MIR`). Duplicating an assembly and assigning the mirror variant allows fabricators to explicitly define mirrored toolpaths without redefining the 20+ cuts and holes manually.
+
+### 2. Import Compatibility Notes
+The Bulk Unit Engine operates via REST JSON today, but its implementation within `HierarchyService.bulk_add_units()` is architected to seamlessly plug into future data sources. A future CSV or Excel parser will simply normalize rows into this bulk generation logic, ensuring domain constraints (tenant isolation, building/floor foreign keys, and unique constraints) are centrally enforced regardless of input mechanism.

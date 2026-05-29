@@ -139,3 +139,8 @@ class AssemblyResponse(BaseModel):
 class AssemblyListResponse(BaseModel):
     assemblies: List[AssemblyResponse]
     total: int
+
+class AssemblyDuplicateRequest(BaseModel):
+    new_name: Optional[str] = Field(default=None)
+    new_unit_type_id: Optional[uuid.UUID] = Field(default=None)
+    variant: Optional[UnitVariant] = Field(default=None)

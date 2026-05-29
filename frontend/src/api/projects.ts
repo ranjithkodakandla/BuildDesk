@@ -29,5 +29,9 @@ export const projectsApi = {
   createUnit: async (projectId: string, unit: Omit<Unit, 'unit_id' | 'project_id'>): Promise<Unit> => {
     const res = await client.post(`/projects/${projectId}/units`, unit);
     return res.data;
+  },
+  bulkCreateUnits: async (projectId: string, data: any): Promise<{ created_count: number, units: Unit[] }> => {
+    const res = await client.post(`/projects/${projectId}/units/bulk`, data);
+    return res.data;
   }
 };

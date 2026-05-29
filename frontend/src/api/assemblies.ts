@@ -21,6 +21,10 @@ export const assembliesApi = {
   deleteAssembly: async (assemblyId: string): Promise<void> => {
     await client.delete(`/assemblies/${assemblyId}`);
   },
+  duplicateAssembly: async (assemblyId: string, data: any): Promise<Assembly> => {
+    const res = await client.post(`/assemblies/${assemblyId}/duplicate`, data);
+    return res.data;
+  },
   getSvgPreviewUrl: (assemblyId: string): string => {
     const baseUrl = client.defaults.baseURL || 'http://localhost:8000/api/v1';
     return `${baseUrl}/assemblies/${assemblyId}/preview/svg`;

@@ -322,6 +322,29 @@ class ProjectHierarchyRepository:
         self.session.refresh(record)
         return _unit_from_record(record)
 
+    def bulk_create_units(self, units: List[Unit]) -> List[Unit]:
+        records = []
+        for unit in units:
+            records.append(UnitRecord(
+                id=str(unit.unit_id),
+                project_id=str(unit.project_id),
+                tenant_id=str(unit.tenant_id),
+                building_id=str(unit.building_id) if unit.building_id else None,
+                floor_id=str(unit.floor_id) if unit.floor_id else None,
+                unit_type_id=str(unit.unit_type_id) if unit.unit_type_id else None,
+                name=unit.name,
+                code=unit.code,
+                variant=unit.variant.value,
+                notes=unit.notes,
+                sort_order=unit.sort_order,
+                created_at=_utcnow(),
+                updated_at=_utcnow(),
+            ))
+        self.session.add_all(records)
+        self.session.commit()
+        # No need to refresh all if we just return the domain objects based on the generated IDs
+        return units
+
     def list_units(self, tenant_id: uuid.UUID, project_id: uuid.UUID) -> List[Unit]:
         records = self.session.query(UnitRecord).filter(
             UnitRecord.project_id == str(project_id),

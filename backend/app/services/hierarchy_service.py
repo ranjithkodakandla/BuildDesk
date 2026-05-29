@@ -277,6 +277,67 @@ class HierarchyService:
         )
         return self._repo.create_unit(unit)
 
+    def bulk_add_units(
+        self,
+        tenant_id: uuid.UUID,
+        project_id: uuid.UUID,
+        start_number: int,
+        end_number: int,
+        prefix: str = "",
+        suffix: str = "",
+        increment: int = 1,
+        *,
+        building_id: Optional[uuid.UUID] = None,
+        floor_id: Optional[uuid.UUID] = None,
+        unit_type_id: Optional[uuid.UUID] = None,
+        variant: UnitVariant = UnitVariant.STANDARD,
+    ) -> List[Unit]:
+        project = self._require_project(tenant_id, project_id)
+        cfg = project.hierarchy_config
+
+        # Validate hierarchy config consistency
+        if building_id and not cfg.has_buildings:
+            raise ValueError("building_id supplied but project does not use buildings.")
+        if floor_id and not cfg.has_floors:
+            raise ValueError("floor_id supplied but project does not use floors.")
+        if floor_id and not building_id:
+            raise ValueError("floor_id requires building_id.")
+
+        # Validate FK existence
+        if building_id:
+            if not self._repo.get_building(tenant_id, building_id):
+                raise ValueError(f"Building {building_id} not found.")
+        if unit_type_id:
+            if not self._repo.get_unit_type(tenant_id, unit_type_id):
+                raise ValueError(f"UnitType {unit_type_id} not found.")
+
+        if end_number < start_number:
+            raise ValueError("end_number must be greater than or equal to start_number")
+        if increment < 1:
+            raise ValueError("increment must be at least 1")
+
+        units_to_create = []
+        num = start_number
+        order = 0
+        while num <= end_number:
+            code_str = f"{prefix}{num}{suffix}"
+            units_to_create.append(Unit(
+                project_id=project_id,
+                tenant_id=tenant_id,
+                building_id=building_id,
+                floor_id=floor_id,
+                unit_type_id=unit_type_id,
+                name=f"Unit {code_str}",
+                code=code_str,
+                variant=variant,
+                notes=None,
+                sort_order=order,
+            ))
+            num += increment
+            order += 1
+
+        return self._repo.bulk_create_units(units_to_create)
+
     def list_units(self, tenant_id: uuid.UUID, project_id: uuid.UUID) -> List[Unit]:
         return self._repo.list_units(tenant_id, project_id)
 

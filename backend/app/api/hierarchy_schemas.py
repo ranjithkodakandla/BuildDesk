@@ -166,6 +166,22 @@ class UnitCreateRequest(BaseModel):
     sort_order:   int                         = Field(default=0)
 
 
+class UnitBulkCreateRequest(BaseModel):
+    start_number: int                 = Field(..., description="Starting unit number (e.g. 101)")
+    end_number:   int                 = Field(..., description="Ending unit number (e.g. 120)")
+    prefix:       Optional[str]       = Field(default="", description="Prefix for unit code (e.g. 'A-')")
+    suffix:       Optional[str]       = Field(default="", description="Suffix for unit code")
+    increment:    int                 = Field(default=1, description="Increment step")
+    building_id:  Optional[uuid.UUID] = Field(default=None)
+    floor_id:     Optional[uuid.UUID] = Field(default=None)
+    unit_type_id: Optional[uuid.UUID] = Field(default=None)
+    variant:      UnitVariantSchema   = Field(default=UnitVariantSchema.STANDARD)
+    
+class UnitBulkCreateResponse(BaseModel):
+    created_count: int
+    units: List[UnitResponse]
+
+
 class UnitResponse(BaseModel):
     unit_id:      uuid.UUID
     project_id:   uuid.UUID

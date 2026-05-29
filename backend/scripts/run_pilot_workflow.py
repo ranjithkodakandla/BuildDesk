@@ -130,26 +130,40 @@ def run():
     }, headers=headers)
     unit_types["B1"] = res.json()["unit_type_id"]
 
-    # 4. Units (Simulate creating ~40 units across 5 floors)
-    print("4. Instantiating Units (40 units)...")
+    # 4. Units (Simulate creating ~150 units across 5 floors using Bulk API)
+    print("4. Instantiating Units (150 units using Bulk Engine)...")
     for f_idx, floor_id in enumerate(floor_ids):
         floor_num = f_idx + 1
-        for u in range(1, 9):
-            unit_code = f"{floor_num}0{u}"
-            # Assign unit type based on some modulo logic
-            if u % 4 == 1: ut_code = "A1"
-            elif u % 4 == 2: ut_code = "A1-MIR"
-            else: ut_code = "B1"
-
-            client.post(f"/api/v1/projects/{project_id}/units", json={
-                "building_id": building_id,
-                "floor_id": floor_id,
-                "unit_type_id": unit_types[ut_code],
-                "name": f"Unit {unit_code}",
-                "code": unit_code,
-                "variant": "mirror" if "MIR" in ut_code else "standard",
-                "sort_order": u
-            }, headers=headers)
+        # Floor 1: 101 - 130
+        client.post(f"/api/v1/projects/{project_id}/units/bulk", json={
+            "building_id": building_id,
+            "floor_id": floor_id,
+            "unit_type_id": unit_types["A1"],
+            "start_number": 1,
+            "end_number": 10,
+            "prefix": f"{floor_num}0",
+            "variant": "standard"
+        }, headers=headers)
+        
+        client.post(f"/api/v1/projects/{project_id}/units/bulk", json={
+            "building_id": building_id,
+            "floor_id": floor_id,
+            "unit_type_id": unit_types["A1-MIR"],
+            "start_number": 11,
+            "end_number": 20,
+            "prefix": f"{floor_num}",
+            "variant": "MIR"
+        }, headers=headers)
+        
+        client.post(f"/api/v1/projects/{project_id}/units/bulk", json={
+            "building_id": building_id,
+            "floor_id": floor_id,
+            "unit_type_id": unit_types["B1"],
+            "start_number": 21,
+            "end_number": 30,
+            "prefix": f"{floor_num}",
+            "variant": "standard"
+        }, headers=headers)
 
     # 5. Assemblies
     print("5. Configuring Assemblies...")
@@ -168,7 +182,7 @@ def run():
         return res.json()
 
     # A1 Kitchen
-    create_assembly(
+    asm_a1 = create_assembly(
         "A1 Kitchen", 
         AssemblyType.KITCHEN, 
         unit_types["A1"],
@@ -206,45 +220,13 @@ def run():
         notes=[{"content": "Template required for wall scribing."}]
     )
 
-    # A1-MIR Kitchen (we manually invert logic or copy over)
-    # The generation engine automatically inverts coordinates if variant=mirror on the assembly or unit type group,
-    # but for full explicit authoring, we will create a mirrored assembly record.
-    create_assembly(
-        "A1 Kitchen (Mirror)", 
-        AssemblyType.KITCHEN, 
-        unit_types["A1-MIR"],
-        parts=[
-            {
-                "part_type": PartType.MAIN_TOP.value,
-                "name": "Main Sink Run",
-                "dimensions": {"length": 110.0, "depth": 25.5, "thickness": 1.25},
-                "edges": [
-                    {"position": Position.FRONT.value, "edge_type": EdgeType.EASED.value},
-                    {"position": Position.LEFT.value, "edge_type": EdgeType.EASED.value},
-                    {"position": Position.RIGHT.value, "edge_type": EdgeType.EASED.value},
-                    {"position": Position.BACK.value, "edge_type": EdgeType.RAW.value}
-                ],
-                "cutouts": [
-                    {
-                        "cutout_type": CutoutType.SINK.value,
-                        "mount_type": MountType.UNDERMOUNT.value,
-                        "dimensions": {"length": 30.0, "depth": 18.0},
-                        "center_x": 55.0,
-                        "center_y": 12.0
-                    }
-                ],
-                "holes": [
-                    {"diameter": 1.375, "center_x": 55.0, "center_y": 3.5, "purpose": "Faucet"},
-                    {"diameter": 1.375, "center_x": 62.0, "center_y": 3.5, "purpose": "Soap Dispenser"} # Mirrored from 48
-                ],
-                "splashes": [
-                    {"splash_type": SplashType.BACKSPLASH.value, "dimensions": {"length": 110.0, "depth": 4.0}},
-                    {"splash_type": SplashType.LEFT_SPLASH.value, "dimensions": {"length": 24.25, "depth": 4.0}},
-                    {"splash_type": SplashType.RIGHT_SPLASH.value, "dimensions": {"length": 24.25, "depth": 4.0}}
-                ]
-            }
-        ]
-    )
+    # A1-MIR Kitchen (we duplicate from A1 Kitchen)
+    print("   Duplicating Assembly for A1-MIR...")
+    client.post(f"/api/v1/assemblies/{asm_a1['assembly_id']}/duplicate", json={
+        "new_name": "A1 Kitchen (Mirror)",
+        "new_unit_type_id": unit_types["A1-MIR"],
+        "variant": "MIR"
+    }, headers=headers)
 
     # B1 L-Shape Kitchen
     create_assembly(

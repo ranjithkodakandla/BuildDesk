@@ -243,6 +243,14 @@ Corrected roadmap:
 - **Frontend Upgrade:** Updated `PackagesPanel.tsx` to actively poll `/status` when the package is in the `generating` state.
 - **Pilot Revalidation:** The `run_pilot_workflow.py` script successfully executed against the new asynchronous architecture, validating the exact same output without blocking the main HTTP loop.
 
-Deferred (pending Phase 8):
+### Phase 8: Bulk Unit Creation & Workflow UX Hardening (✅ Complete)
+**Goal:** Solve the largest workflow pain discovered during pilot validation. Allow BuildDesk users to author realistic multifamily projects quickly without repetitive manual unit entry.
+- **Bulk Creation API:** Added `POST /projects/{id}/units/bulk` endpoint capable of generating range-based units with prefixes, suffixes, increments, and type/variant assignments.
+- **Assembly Duplication:** Added `POST /assemblies/{id}/duplicate` endpoint, providing a deep-copy mechanism with UUID regeneration and automatic mirroring capabilities.
+- **Frontend Enhancements:** Added a "Bulk Generate Units" form in `HierarchyPanel.tsx` and "Duplicate" functionality in `AssembliesPanel.tsx`.
+- **Pilot Revalidation:** Updated `run_pilot_workflow.py` to instantiate 150 units using the new bulk engine, validating authoring speed improvement.
+
+Deferred (pending Phase 9):
   □ asyncpg migration (Deferred)
   □ Distributed Workers (Celery/Kafka) - *Only when scale dictates (>1000 concurrent units)*
+  □ Import Workflow (CSV/Excel) - Future phases

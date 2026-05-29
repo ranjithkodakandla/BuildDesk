@@ -129,12 +129,68 @@ export const HierarchyPanel: React.FC<Props> = ({ project }) => {
 
       {/* Units Section */}
       <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-lg font-bold mb-4">Units</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-bold">Units</h2>
+          <div className="text-sm text-gray-500 font-medium">Total: {units.length}</div>
+        </div>
         
+        {/* Bulk Create Form */}
+        <div className="mb-6 p-4 bg-gray-50 border rounded-lg">
+          <h3 className="text-sm font-bold mb-3 text-gray-700 uppercase">Bulk Generate Units</h3>
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Prefix</label>
+              <input type="text" placeholder="e.g. A-" value={newUnitCode.split('-')[0]} onChange={() => {}} className="border p-2 rounded w-16" id="bulk-prefix" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Start #</label>
+              <input type="number" placeholder="101" className="border p-2 rounded w-20" id="bulk-start" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">End #</label>
+              <input type="number" placeholder="120" className="border p-2 rounded w-20" id="bulk-end" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Type</label>
+              <select id="bulk-type" className="border p-2 rounded w-40">
+                <option value="">-- Type --</option>
+                {unitTypes.map(ut => (
+                  <option key={ut.unit_type_id} value={ut.unit_type_id}>{ut.code}</option>
+                ))}
+              </select>
+            </div>
+            <button 
+              onClick={async () => {
+                const prefix = (document.getElementById('bulk-prefix') as HTMLInputElement).value;
+                const start = parseInt((document.getElementById('bulk-start') as HTMLInputElement).value);
+                const end = parseInt((document.getElementById('bulk-end') as HTMLInputElement).value);
+                const type = (document.getElementById('bulk-type') as HTMLSelectElement).value;
+                
+                if (start && end && start <= end) {
+                  try {
+                    await projectsApi.bulkCreateUnits(project.project_id, {
+                      start_number: start,
+                      end_number: end,
+                      prefix,
+                      unit_type_id: type || undefined
+                    });
+                    loadData();
+                  } catch(e) {
+                    console.error(e);
+                  }
+                }
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium shadow-sm transition-colors"
+            >
+              Generate
+            </button>
+          </div>
+        </div>
+
         <div className="mb-4 flex space-x-2">
           <input 
             type="text" 
-            placeholder="Unit Code (e.g. 101)" 
+            placeholder="Single Unit Code (e.g. 101)" 
             value={newUnitCode} 
             onChange={(e) => setNewUnitCode(e.target.value)}
             className="border p-2 rounded w-48"
@@ -149,14 +205,14 @@ export const HierarchyPanel: React.FC<Props> = ({ project }) => {
               <option key={ut.unit_type_id} value={ut.unit_type_id}>{ut.code} - {ut.name}</option>
             ))}
           </select>
-          <button onClick={handleCreateUnit} className="bg-blue-600 text-white px-4 py-2 rounded font-medium">Add Unit</button>
+          <button onClick={handleCreateUnit} className="bg-blue-600 text-white px-4 py-2 rounded font-medium">Add Single Unit</button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-96 overflow-y-auto p-1">
           {units.map(u => {
             const ut = unitTypes.find(t => t.unit_type_id === u.unit_type_id);
             return (
-              <div key={u.unit_id} className="p-3 border rounded text-center bg-gray-50">
+              <div key={u.unit_id} className="p-3 border rounded text-center bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="font-bold text-gray-900">{u.code}</div>
                 <div className="text-xs text-gray-500 mt-1">{ut ? ut.code : 'Untyped'}</div>
               </div>

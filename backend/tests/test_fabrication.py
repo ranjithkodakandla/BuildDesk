@@ -289,3 +289,34 @@ class TestAssemblyCreation:
         success = service.delete_assembly(tenant_id, assembly_id)
         assert success is True
         assert service.get_assembly(tenant_id, assembly_id) is None
+
+    def test_duplicate_assembly(self, service, project, tenant_id):
+        assembly_id = uuid.uuid4()
+        assembly = Assembly(
+            assembly_id=assembly_id,
+            project_id=project.project_id,
+            tenant_id=tenant_id,
+            name="Original",
+            assembly_type=AssemblyType.KITCHEN,
+            notes=[FabricationNote(assembly_id=assembly_id, content="A note")],
+            parts=[
+                Part(
+                    part_id=uuid.uuid4(),
+                    assembly_id=assembly_id,
+                    part_type=PartType.MAIN_TOP,
+                    name="Top",
+                    dimensions=Dimensions(length=10, depth=10)
+                )
+            ]
+        )
+        service.create_assembly(assembly)
+
+        dup = service.duplicate_assembly(tenant_id, assembly_id, new_name="Duplicated", variant=UnitVariant.MIRROR)
+        assert dup.assembly_id != assembly_id
+        assert dup.name == "Duplicated"
+        assert dup.variant == UnitVariant.MIRROR
+        assert len(dup.parts) == 1
+        assert dup.parts[0].part_id != assembly.parts[0].part_id
+        assert dup.parts[0].name == "Top"
+        assert len(dup.notes) == 1
+        assert dup.notes[0].note_id != assembly.notes[0].note_id

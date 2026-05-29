@@ -328,6 +328,22 @@ class TestUnits:
         units_other = service.list_units(other_tenant_id, project.project_id)
         assert len(units_other) == 0
 
+    def test_bulk_create_units(self, service, tenant_id):
+        project = service.create_project(tenant_id, "Bulk Project")
+        units = service.bulk_add_units(
+            tenant_id, project.project_id,
+            start_number=1, end_number=5,
+            prefix="A-", suffix="-B",
+            increment=2
+        )
+        assert len(units) == 3 # 1, 3, 5
+        assert units[0].code == "A-1-B"
+        assert units[1].code == "A-3-B"
+        assert units[2].code == "A-5-B"
+        
+        all_units = service.list_units(tenant_id, project.project_id)
+        assert len(all_units) == 3
+
 
 # ---------------------------------------------------------------------------
 # ProjectTree tests

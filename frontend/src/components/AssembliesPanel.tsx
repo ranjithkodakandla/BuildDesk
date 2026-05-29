@@ -130,12 +130,32 @@ export const AssembliesPanel: React.FC<Props> = ({ project }) => {
                 <span>{asm.notes?.length || 0} Notes</span>
               </div>
               
-              <button 
-                onClick={() => setSelectedAssembly(asm)}
-                className="w-full border border-blue-600 text-blue-600 hover:bg-blue-50 py-2 rounded font-medium"
-              >
-                Edit Assembly
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setSelectedAssembly(asm)}
+                  className="flex-1 border border-blue-600 text-blue-600 hover:bg-blue-50 py-2 rounded font-medium"
+                >
+                  Edit Assembly
+                </button>
+                <button 
+                  onClick={async () => {
+                    const confirmDup = window.confirm(`Duplicate "${asm.name}"?`);
+                    if (confirmDup) {
+                      try {
+                        const duplicate = await assembliesApi.duplicateAssembly(asm.assembly_id, {
+                          new_name: `${asm.name} (Copy)`
+                        });
+                        setAssemblies([...assemblies, duplicate]);
+                      } catch(e) {
+                        console.error(e);
+                      }
+                    }
+                  }}
+                  className="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 rounded font-medium"
+                >
+                  Duplicate
+                </button>
+              </div>
             </div>
           )
         })}

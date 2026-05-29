@@ -8,25 +8,31 @@
 
 | Field              | Value                                  |
 |--------------------|----------------------------------------|
-| Last completed phase | Phase 7 — Asynchronous Package Workflow & Artifact Storage |
-| Git branch         | `feat/phase-7-async-packages` (to be committed) |
-| Test baseline      | 54/54 backend, 13/13 frontend |
+| Last completed phase | Phase 8 — Bulk-Unit Creation UI & UX Hardening |
+| Git branch         | `feat/phase-8-bulk-authoring` (to be committed) |
+| Test baseline      | 62/62 backend, 18/18 frontend |
 | Migration state    | Up to date |
 
 ---
 
 ## Immediate Next Milestone
 
-**Phase 8 — Bulk-Unit Creation UI & UX Hardening**
+**Phase 9 — Export Engine Enhancements**
 
-Goal: Address the primary usability gap discovered in the Pilot Validation (Phase 6). Allow users to quickly generate hundreds of units based on patterns (e.g. Floors 1-5, Units 01-12) instead of single-record entry.
+The system is ready to proceed to Phase 9.
 
-Priority tasks:
-1. **Bulk Generation API** — Create a `POST /projects/{id}/units/bulk` endpoint that accepts floor ranges, unit numbering patterns, and a Unit Type mapping, and generates the units efficiently.
-2. **Frontend UI** — Build a "Generate Units" modal in `HierarchyPanel.tsx` that provides a spreadsheet-like or pattern-based interface for mass unit creation.
-3. **Assembly Duplication** — Add "Duplicate" action to `AssembliesPanel.tsx` to easily clone a base Kitchen assembly to a MIRROR variant.
+### Next Execution Target: Phase 9 — Export Engine Enhancements
 
-Domain test: Can a user instantiate a 150-unit building with 4 unit types in under 60 seconds of interaction?
+With the application successfully supporting bulk authoring workflows and asynchronous package generation, the focus shifts back to the output artifacts themselves. The current exports (PDF and SVG) are functional but need refinement to match the visual fidelity and detail required by professional countertop fabricators.
+
+**Key Objectives for Phase 9:**
+1. **Dimension Callouts:** Implement automated dimensional annotations on SVG vectors so that shop floor workers can read measurements directly from the diagrams without manual scaling.
+2. **Cover Page Generation:** Add a professional cover page to the PDF package, including project metadata, total unit counts, revision history, and standard fabrication notes.
+3. **Table of Contents:** Include an index page mapping unit types to their corresponding package pages for easier navigation in large (100+ page) printouts.
+4. **Drawing Template Overhaul:** Improve the border, title block, and layout of individual drawing pages to look like standard architectural/fabrication shop drawings.
+
+**Required Verification:**
+- Generate the pilot project package and visually compare the newly generated PDF against real-world examples (like those from Canyon) to ensure dimensioning and title blocks are acceptable.
 
 ---
 
