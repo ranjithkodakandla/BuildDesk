@@ -1,5 +1,12 @@
 # Current State
 
+> ⚠️ **Before starting new work: validate against ADR-001.**
+> Read [`docs/domain-guardrail.md`](./domain-guardrail.md) before implementing any feature.
+> Follow the mandatory session start protocol in [`docs/session-start.md`](./session-start.md).
+> Check [`docs/next-step.md`](./next-step.md) for the exact current milestone and recommended next prompt.
+
+---
+
 Completed:
 
 ✓ Repo created
