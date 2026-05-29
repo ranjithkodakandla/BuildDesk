@@ -181,8 +181,12 @@ Corrected roadmap:
 - **Additive Migration:** Apply structural changes without dropping legacy tables.
 - **REST APIs:** Add tenant-scoped endpoints for the entire hierarchy, culminating in `/api/v1/projects/{id}/tree`.
 
-  Phase 2: Assembly & Fabrication Model
-  Phase 3: Project Package Generator (multi-page PDF)
+### Phase 2: Assembly & Fabrication Model (✅ Complete)
+**Goal:** Transition from generic shapes to a real countertop fabrication assembly model.
+- **Domain Models:** Implemented `Assembly`, `Part`, `Splash`, `Cutout`, `Hole`, `EdgeTreatment`, and `FabricationNote` to mirror real multifamily countertop piece-level details.
+- **Variant Logic:** Handled MIR, ADA, LEFT, RIGHT permutations at the Assembly and Unit levels.
+- **Additive Migration:** Preserved legacy single-shape records while building new normalized tables.
+- **Fabrication API:** Exposed full lifecycle CRUD endpoints under `/api/v1/assemblies/` with JWT auth and tenant scoping.
   Phase 4: Advanced Drawing Logic (cutouts, holes, edges, seams)
   Phase 5: UI Realignment to real workflow
 

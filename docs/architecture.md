@@ -129,6 +129,32 @@ Tenant
 * schema_version on ShapeTemplate and GeometryModel enables future StoneDesk interoperability
 * Package versioning: regeneration creates a new record (no mutation)
 
+### Phase 1 & 2: Project & Fabrication Hierarchy
+
+BuildDesk maps exactly to real-world countertop project structures:
+
+```
+Tenant
+└── Project
+    └── Building (optional)
+        └── Floor (optional)
+            ├── UnitType (e.g. Type A)
+            └── Unit (e.g. Unit 101, variant=MIRROR)
+                └── Assembly (e.g. Kitchen, Vanity)
+                    ├── FabricationNote
+                    └── Part (e.g. Main Top, Splash)
+                        ├── EdgeTreatment (e.g. Front=Eased)
+                        ├── Cutout (e.g. Sink=Undermount)
+                        ├── Hole (e.g. Faucet=1.375")
+                        └── Splash (e.g. Backsplash=4" tall)
+```
+
+**Key Assembly Concepts:**
+* **Assembly**: A logical grouping of pieces (e.g. an entire L-Kitchen with its island).
+* **Part**: A physical piece of stone.
+* **Variant Logic**: Unit/Assembly variants (e.g., `MIRROR`, `ADA`) dictate downstream geometric transformations. Assemblies inherit variants from Units if left as standard.
+* **Additivity**: Legacy single-shape geometry records (`GeometryModel`) coexist alongside the normalized Assembly structure during the transition phase.
+
 ## Service Layer
 
 Pure Python services — no HTTP, no DB, no side effects.

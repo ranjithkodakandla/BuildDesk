@@ -16,6 +16,7 @@ from fastapi.security import HTTPBearer
 from app.api.auth import router as auth_router
 from app.api.demo import router as demo_router
 from app.api.export import router as export_router
+from app.api.fabrication import router as fabrication_router
 from app.api.geometry import router as geometry_router
 from app.api.health import router as health_router
 from app.api.hierarchy import router as hierarchy_router
@@ -85,6 +86,8 @@ def create_app() -> FastAPI:
     application.include_router(auth_router,      prefix="/api/v1", tags=["auth"])
     # Phase 1: Project Hierarchy
     application.include_router(hierarchy_router, prefix="/api/v1", tags=["hierarchy"])
+    # Phase 2: Fabrication Domain (Assemblies)
+    application.include_router(fabrication_router, prefix="/api/v1", tags=["fabrication"])
     # Legacy geometry endpoints (deprecated, kept for backward compatibility)
     application.include_router(shapes_router,    prefix="/api/v1", tags=["shapes (legacy)"])
     application.include_router(geometry_router,  prefix="/api/v1", tags=["geometry (legacy)"])

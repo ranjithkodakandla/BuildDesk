@@ -24,7 +24,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import String, DateTime, JSON, ForeignKey, Boolean, Integer, Text, Date
+from sqlalchemy import String, DateTime, JSON, ForeignKey, Boolean, Integer, Text, Date, Float
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -212,4 +212,112 @@ class UserRecord(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(50), nullable=False, default="member")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+# ---------------------------------------------------------------------------
+# Fabrication Domain (Phase 2)
+# ---------------------------------------------------------------------------
+
+class AssemblyRecord(Base):
+    __tablename__ = "assemblies"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
+    unit_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("units.id"), nullable=True, default=None)
+    unit_type_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("unit_types.id"), nullable=True, default=None)
+    
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    assembly_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    variant: Mapped[str] = mapped_column(String(20), nullable=False, default="standard")
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class FabricationNoteRecord(Base):
+    __tablename__ = "fabrication_notes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    assembly_id: Mapped[str] = mapped_column(String(36), ForeignKey("assemblies.id"), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class PartRecord(Base):
+    __tablename__ = "parts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    assembly_id: Mapped[str] = mapped_column(String(36), ForeignKey("assemblies.id"), nullable=False)
+    part_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    
+    # Dimensions
+    dim_length: Mapped[float] = mapped_column(Float, nullable=False)
+    dim_depth: Mapped[float] = mapped_column(Float, nullable=False)
+    dim_thickness: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=None)
+    
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class SplashRecord(Base):
+    __tablename__ = "splashes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    part_id: Mapped[str] = mapped_column(String(36), ForeignKey("parts.id"), nullable=False)
+    splash_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    
+    # Dimensions
+    dim_length: Mapped[float] = mapped_column(Float, nullable=False)
+    dim_depth: Mapped[float] = mapped_column(Float, nullable=False)
+    dim_thickness: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=None)
+    
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class CutoutRecord(Base):
+    __tablename__ = "cutouts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    part_id: Mapped[str] = mapped_column(String(36), ForeignKey("parts.id"), nullable=False)
+    cutout_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    mount_type: Mapped[str] = mapped_column(String(50), nullable=False, default="none")
+    
+    # Position
+    center_x: Mapped[float] = mapped_column(Float, nullable=False)
+    center_y: Mapped[float] = mapped_column(Float, nullable=False)
+    
+    # Dimensions
+    dim_length: Mapped[float] = mapped_column(Float, nullable=False)
+    dim_depth: Mapped[float] = mapped_column(Float, nullable=False)
+    dim_thickness: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=None)
+    
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class HoleRecord(Base):
+    __tablename__ = "holes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    part_id: Mapped[str] = mapped_column(String(36), ForeignKey("parts.id"), nullable=False)
+    diameter: Mapped[float] = mapped_column(Float, nullable=False)
+    center_x: Mapped[float] = mapped_column(Float, nullable=False)
+    center_y: Mapped[float] = mapped_column(Float, nullable=False)
+    purpose: Mapped[str] = mapped_column(String(100), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class EdgeTreatmentRecord(Base):
+    __tablename__ = "edge_treatments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    part_id: Mapped[str] = mapped_column(String(36), ForeignKey("parts.id"), nullable=False)
+    position: Mapped[str] = mapped_column(String(50), nullable=False)
+    edge_type: Mapped[str] = mapped_column(String(50), nullable=False, default="eased")
+    length: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=None)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
