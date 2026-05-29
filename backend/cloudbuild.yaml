@@ -23,7 +23,12 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
-      # Future: Add secret mapping here
+      - '--add-cloudsql-instances'
+      - 'stonedesk-app:us-central1:builddesk-db'
+      - '--set-env-vars'
+      - 'APP_ENV=production,USE_SQL_REPOSITORY=true,USE_LOCAL_STORAGE=true'
+      - '--set-secrets'
+      - 'DATABASE_URL=BUILDDESK_DATABASE_URL:latest,JWT_SECRET_KEY=BUILDDESK_JWT_SECRET:latest'
     id: 'deploy-cloud-run'
 
 substitutions:

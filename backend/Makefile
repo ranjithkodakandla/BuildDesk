@@ -1,4 +1,6 @@
-.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres cloud-build cloud-run-local deploy-gcp deploy-cloudsql check-health cloud-logs
+.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres cloud-build cloud-run-local deploy-gcp deploy-cloudsql check-health cloud-logs staging-validate
+
+STAGING_URL ?= https://builddesk-api-149130710868.us-central1.run.app
 
 run:
 	uvicorn app.main:app --reload --port 8000
@@ -47,4 +49,10 @@ check-health:
 
 cloud-logs:
 	@echo "Fetching recent Cloud Run logs..."
-	gcloud run services logs read builddesk-api --region us-central1 --limit 50
+	gcloud run services logs read builddesk-api --region us-central1 --project stonedesk-app --limit 50
+
+staging-validate:
+	STAGING_API_URL=$(STAGING_URL) python scripts/run_staging_validation.py
+
+check-staging-health:
+	curl -s $(STAGING_URL)/api/v1/health | python -m json.tool
