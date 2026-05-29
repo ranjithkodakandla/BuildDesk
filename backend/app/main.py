@@ -1,10 +1,11 @@
 """
 BuildDesk Backend
 =================
-Geometry-driven B2B SaaS platform for builders, construction companies,
-and surface contractors.
+Multifamily countertop fabrication package platform for builders,
+construction companies, and surface contractors.
 
 Architecture: Multi-tenant, backend-first, GCP Cloud Run target.
+Domain: Project → Building (opt) → Floor (opt) → Unit → Assembly → Part → Package
 """
 
 from fastapi import FastAPI
@@ -17,6 +18,7 @@ from app.api.demo import router as demo_router
 from app.api.export import router as export_router
 from app.api.geometry import router as geometry_router
 from app.api.health import router as health_router
+from app.api.hierarchy import router as hierarchy_router
 from app.api.shapes import router as shapes_router
 from app.config import get_settings
 
@@ -79,12 +81,15 @@ def create_app() -> FastAPI:
     # Routers  (all mounted under /api/v1)
     # ------------------------------------------------------------------
 
-    application.include_router(health_router,   prefix="/api/v1", tags=["health"])
-    application.include_router(shapes_router,   prefix="/api/v1", tags=["shapes"])
-    application.include_router(auth_router,     prefix="/api/v1", tags=["auth"])
-    application.include_router(geometry_router, prefix="/api/v1", tags=["geometry"])
-    application.include_router(export_router,   prefix="/api/v1", tags=["export"])
-    application.include_router(demo_router,     prefix="/api/v1", tags=["demo"])
+    application.include_router(health_router,    prefix="/api/v1", tags=["health"])
+    application.include_router(auth_router,      prefix="/api/v1", tags=["auth"])
+    # Phase 1: Project Hierarchy
+    application.include_router(hierarchy_router, prefix="/api/v1", tags=["hierarchy"])
+    # Legacy geometry endpoints (deprecated, kept for backward compatibility)
+    application.include_router(shapes_router,    prefix="/api/v1", tags=["shapes (legacy)"])
+    application.include_router(geometry_router,  prefix="/api/v1", tags=["geometry (legacy)"])
+    application.include_router(export_router,    prefix="/api/v1", tags=["export (legacy)"])
+    application.include_router(demo_router,      prefix="/api/v1", tags=["demo (legacy)"])
 
     return application
 
