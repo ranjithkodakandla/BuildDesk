@@ -1,9 +1,9 @@
 # PHASE 16 PRODUCTION SIGN-OFF REPORT
 
 **Date:** 2026-05-29  
-**Branch:** `feat/phase16-production-signoff`  
+**Branch:** `feat/phase16-production-signoff` → **`canonical-phase16`** @ `3425c68`  
 **GCP project:** `stonedesk-app`  
-**Service:** `builddesk-api` revision `builddesk-api-00018-24z`
+**Service:** `builddesk-api` revision `builddesk-api-00019-6p8` (image `3425c68`)
 
 ---
 

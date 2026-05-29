@@ -1,38 +1,46 @@
 # Next Step
 
-> Auto-updated after each milestone. Always read this before starting a new session.
+> Auto-updated after Phase 16 consolidation. Read `docs/session-start.md` before new work.
 
 ---
 
 ## Current State
 
-| Field              | Value                                  |
-|--------------------|----------------------------------------|
-| Last completed phase | Phase 16 — Production Persistence & Launch Sign-off |
-| Git branch         | `feat/phase16-production-signoff` |
-| Canonical baseline | `canonical-phase15-5` (merge Phase 16 when ready) |
-| Test baseline      | Backend `76 / 76` pytest; frontend `17 / 17`; build OK |
-| Live revision      | `builddesk-api-00018-24z` |
-| Live URL           | `https://builddesk-api-149130710868.us-central1.run.app` |
-| GCS bucket         | `builddesk-artifacts-stonedesk-app` |
-| Verdict            | **CONDITIONAL GO** |
+| Field              | Value |
+|--------------------|--------|
+| Last completed phase | Phase 16 — Production Persistence & Launch Sign-off (consolidated) |
+| **Canonical baseline** | **`canonical-phase16`** @ `3425c68` |
+| Feature branch (merged) | `feat/phase16-production-signoff` |
+| Test baseline | Backend **76 / 76** pytest; frontend **17 / 17**; build OK |
+| Live revision | `builddesk-api-00019-6p8` |
+| Live URL | `https://builddesk-api-149130710868.us-central1.run.app` |
+| GCS bucket | `builddesk-artifacts-stonedesk-app` |
+| Alembic head | `a8f1c2d3e4b5` |
+| Production verdict | **CONDITIONAL GO** |
 
 ---
 
-## Immediate Next Milestone
+## Consolidation complete
 
-**Phase 17 — Production frontend & operator sign-off**
+Phase 16 is locked on `canonical-phase16`. No open code blockers from Phase 15/15.5 (FK fix committed in `701b9e2`, GCS in `3425c68`).
 
-1. Deploy static frontend (Firebase Hosting, Cloud Storage+CDN, or similar).
-2. Add production origin to Cloud Run `ALLOWED_ORIGINS` and redeploy.
-3. Complete manual browser checklist (`docs/phase16-browser-validation.md`).
-4. Optional: Playwright smoke for login → package download.
-5. Load test at full assembly/page counts before SLA commitments.
+**Before starting new work:** checkout `canonical-phase16`, run session-start protocol, read `docs/phase16-final-closeout-report.md`.
 
 ---
 
-## Pending Blockers
+## Remaining operational items (not code blockers)
 
-- Manual browser click-through not recorded in CI.
-- Production frontend hosting URL not configured in CORS.
-- GCS lifecycle/retention policy not defined.
+| Item | Owner |
+|------|--------|
+| Manual browser sign-off (`docs/phase16-browser-validation.md`) | Operator |
+| Production frontend origin in `ALLOWED_ORIGINS` | When static app is hosted |
+| GCS lifecycle/retention policy | Ops |
+| Full-fidelity load test (300+ units, dense drawings) | Optional pre-SLA |
+
+---
+
+## Reference docs
+
+- `docs/phase16-final-closeout-report.md` — consolidation & readiness matrix
+- `docs/phase16-production-signoff-report.md` — Phase 16 implementation sign-off
+- `docs/phase16-browser-validation.md` — operator browser checklist

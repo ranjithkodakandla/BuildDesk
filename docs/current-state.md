@@ -319,13 +319,14 @@ Corrected roadmap:
 - **Technical Debt:** Pydantic `model_dump()` in import paths; timezone-aware datetimes in RFI and package approval APIs.
 - **Validation:** Backend pytest `70 / 70`; frontend `17 / 17`; pilot workflow green.
 
-### Phase 16: Production Persistence & Launch Sign-off (✅ Complete)
+### Phase 16: Production Persistence & Launch Sign-off (✅ Complete — canonical `canonical-phase16`)
 **Goal:** Close staging→production gaps (durability, CORS, validation) without new product features.
+- **Canonical:** `canonical-phase16` @ `3425c68`; live revision `builddesk-api-00019-6p8`; image tag `3425c68`.
 - **GCS:** `CloudStorageService` — upload/download/exists; bucket `builddesk-artifacts-stonedesk-app`; API-proxied PDF/export downloads.
 - **Config:** `Settings` storage + comma-separated `ALLOWED_ORIGINS`; production startup checks in `app/startup_checks.py`.
 - **Deploy:** `deploy.sh` / `cloudbuild.yaml` — `USE_LOCAL_STORAGE=false`, bucket, CORS, `GCP_PROJECT_ID`.
 - **Validation:** Live staging **11/11**; load script (8 assemblies, 200 units, `gs://` PDF); pytest **76/76**.
-- **Verdict:** **CONDITIONAL GO** — see `docs/phase16-production-signoff-report.md`.
+- **Verdict:** **CONDITIONAL GO** — see `docs/phase16-final-closeout-report.md`.
 
 ### Phase 15.5: Live Staging Validation (✅ Complete — Phase 15.5d closure)
 **Goal:** Prove deployed system on Cloud Run + Cloud SQL without new product features.
@@ -334,7 +335,7 @@ Corrected roadmap:
 - **Live E2E:** `run_staging_validation.py` — **11/11 PASS**, 200 units, **15.09s** (`artifacts/staging_validation_report.json`).
 - **Hotfix (deployed):** `PackageRepository.save_package()` flush before `package_pages` FK inserts (large manifests).
 - **Tooling:** `docs/phase15-5-staging-validation.md`, `docs/phase15-5b-deploy-recovery.md`, `docs/phase15-5d-live-deployment-report.md`.
-- **Known gaps:** GCS not implemented (`USE_LOCAL_STORAGE=true`); ephemeral PDF path on container disk.
+- **Historical note:** Pre–Phase 16 revisions used ephemeral container storage; superseded by GCS in Phase 16.
 - **Validation:** Backend pytest `71 / 71`; frontend `17 / 17`.
 
 Deferred:

@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-29  
 **API:** `https://builddesk-api-149130710868.us-central1.run.app`  
-**Revision:** `builddesk-api-00018-24z`  
+**Revision:** `builddesk-api-00019-6p8` (image `3425c68`)  
 **Frontend:** Vite dev (`http://localhost:5173`) with `VITE_API_BASE_URL` → live API (or `/api` proxy)
 
 ---
