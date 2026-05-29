@@ -174,7 +174,13 @@ Subsystem reuse decisions:
               single-shape PDF as primary workflow
 
 Corrected roadmap:
-  Phase 1: Flexible Project Hierarchy → IN PROGRESS (next)
+ ### Phase 1: Flexible Project Hierarchy (✅ Complete)
+**Goal:** Replace flat projects with a hierarchy that mirrors real multifamily projects.
+- **Project Configuration:** Implement `HierarchyConfig` (has_buildings, has_floors) as a JSON payload on `ProjectRecord`.
+- **Domain Entities:** Add models for `Building`, `Floor`, `UnitType`, and `Unit`.
+- **Additive Migration:** Apply structural changes without dropping legacy tables.
+- **REST APIs:** Add tenant-scoped endpoints for the entire hierarchy, culminating in `/api/v1/projects/{id}/tree`.
+
   Phase 2: Assembly & Fabrication Model
   Phase 3: Project Package Generator (multi-page PDF)
   Phase 4: Advanced Drawing Logic (cutouts, holes, edges, seams)
