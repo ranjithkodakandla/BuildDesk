@@ -26,7 +26,7 @@ steps:
       - '--add-cloudsql-instances'
       - 'stonedesk-app:us-central1:builddesk-db'
       - '--set-env-vars'
-      - 'APP_ENV=production,USE_SQL_REPOSITORY=true,USE_LOCAL_STORAGE=true'
+      - 'APP_ENV=production,USE_SQL_REPOSITORY=true,USE_LOCAL_STORAGE=false,STORAGE_BUCKET=${_STORAGE_BUCKET},GCP_PROJECT_ID=$PROJECT_ID,ALLOWED_ORIGINS=${_ALLOWED_ORIGINS}'
       - '--set-secrets'
       - 'DATABASE_URL=BUILDDESK_DATABASE_URL:latest,JWT_SECRET_KEY=BUILDDESK_JWT_SECRET:latest'
     id: 'deploy-cloud-run'
@@ -35,6 +35,8 @@ substitutions:
   _REGION: 'us-central1'
   _REPO_NAME: 'builddesk-repo'
   _SERVICE_NAME: 'builddesk-api'
+  _STORAGE_BUCKET: 'builddesk-artifacts-stonedesk-app'
+  _ALLOWED_ORIGINS: 'http://localhost:5173'
 
 options:
   logging: CLOUD_LOGGING_ONLY

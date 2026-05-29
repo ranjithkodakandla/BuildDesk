@@ -319,6 +319,14 @@ Corrected roadmap:
 - **Technical Debt:** Pydantic `model_dump()` in import paths; timezone-aware datetimes in RFI and package approval APIs.
 - **Validation:** Backend pytest `70 / 70`; frontend `17 / 17`; pilot workflow green.
 
+### Phase 16: Production Persistence & Launch Sign-off (✅ Complete)
+**Goal:** Close staging→production gaps (durability, CORS, validation) without new product features.
+- **GCS:** `CloudStorageService` — upload/download/exists; bucket `builddesk-artifacts-stonedesk-app`; API-proxied PDF/export downloads.
+- **Config:** `Settings` storage + comma-separated `ALLOWED_ORIGINS`; production startup checks in `app/startup_checks.py`.
+- **Deploy:** `deploy.sh` / `cloudbuild.yaml` — `USE_LOCAL_STORAGE=false`, bucket, CORS, `GCP_PROJECT_ID`.
+- **Validation:** Live staging **11/11**; load script (8 assemblies, 200 units, `gs://` PDF); pytest **76/76**.
+- **Verdict:** **CONDITIONAL GO** — see `docs/phase16-production-signoff-report.md`.
+
 ### Phase 15.5: Live Staging Validation (✅ Complete — Phase 15.5d closure)
 **Goal:** Prove deployed system on Cloud Run + Cloud SQL without new product features.
 - **Deployed:** Cloud Run `builddesk-api-00015-jv4` on `stonedesk-app`; Alembic head `a8f1c2d3e4b5` on Cloud SQL.

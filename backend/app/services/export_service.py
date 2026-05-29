@@ -51,15 +51,20 @@ class ExportService:
                 raise ValueError(f"Unknown export type: {job.export_type}")
                 
             file_bytes = self._generate_file(headers, rows, job.format)
-            
-            # Since this is localMVP, we'll save it to artifacts
-            import os
-            os.makedirs("artifacts/exports", exist_ok=True)
-            filename = f"artifacts/exports/{job.job_id}.{job.format.value}"
-            with open(filename, "wb") as f:
-                f.write(file_bytes)
-                
-            job.file_path = filename
+
+            from app.services.cloud_storage import CloudStorageService
+
+            content_types = {
+                "csv": "text/csv",
+                "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            }
+            storage_svc = CloudStorageService()
+            object_name = f"projects/{job.project_id}/exports/{job.job_id}.{job.format.value}"
+            job.file_path = storage_svc.upload_bytes(
+                object_name,
+                file_bytes,
+                content_type=content_types.get(job.format.value, "application/octet-stream"),
+            )
             job.status = ExportStatus.COMPLETED
             self.export_repo.save_job(job)
             return job

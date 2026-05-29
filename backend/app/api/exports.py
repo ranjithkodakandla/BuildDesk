@@ -90,12 +90,17 @@ async def download_export(
     if job.status != ExportStatus.COMPLETED or not job.file_path:
         raise HTTPException(status_code=400, detail="Export not ready")
         
-    # In production, we'd return a signed GCS URL. Here we return the local file.
-    import os
-    if not os.path.exists(job.file_path):
-        raise HTTPException(status_code=404, detail="File not found on disk")
-        
-    media_type = "text/csv" if job.format.value == "csv" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    from app.services.storage_download import artifact_file_response
+
+    media_type = (
+        "text/csv"
+        if job.format.value == "csv"
+        else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
     filename = f"export_{job.export_type.value}_{job.project_id}.{job.format.value}"
-    
-    return FileResponse(path=job.file_path, media_type=media_type, filename=filename)
+    return artifact_file_response(
+        job.file_path,
+        filename=filename,
+        media_type=media_type,
+        inline=False,
+    )

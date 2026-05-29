@@ -12,6 +12,7 @@ from app.repositories.export_repository import ExportRepository
 from app.services.hierarchy_service import HierarchyService
 from app.services.fabrication_service import FabricationService
 from app.services.export_service import ExportService
+from app.services.cloud_storage import CloudStorageService
 from app.models.fabrication import Assembly, AssemblyType, Part, PartType, Dimensions
 
 
@@ -81,25 +82,24 @@ def test_export_workflow(svc: ExportService, hierarchy_svc: HierarchyService, fa
     job = svc.execute_export(tenant_id, job.job_id)
     assert job.status == ExportStatus.COMPLETED
     assert job.file_path is not None
-    assert job.file_path.endswith(".csv")
-    
-    with open(job.file_path, "r") as f:
-        content = f.read()
-        assert "101" in content
-        assert "E1" in content
+    assert ".csv" in job.file_path
+
+    storage = CloudStorageService()
+    content = storage.download_bytes(job.file_path).decode()
+    assert "101" in content
+    assert "E1" in content
 
     # Test XLSX Fabrication
     job = svc.request_export(tenant_id, project.project_id, ExportType.FABRICATION, ExportFormat.XLSX)
     job = svc.execute_export(tenant_id, job.job_id)
     assert job.status == ExportStatus.COMPLETED
-    assert job.file_path.endswith(".xlsx")
+    assert ".xlsx" in job.file_path
 
     # Test CSV Summary
     job = svc.request_export(tenant_id, project.project_id, ExportType.SUMMARY, ExportFormat.CSV)
     job = svc.execute_export(tenant_id, job.job_id)
     assert job.status == ExportStatus.COMPLETED
     
-    with open(job.file_path, "r") as f:
-        content = f.read()
-        assert "E1" in content
-        assert "1" in content # Count
+    content = storage.download_bytes(job.file_path).decode()
+    assert "E1" in content
+    assert "1" in content  # Count

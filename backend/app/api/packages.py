@@ -265,20 +265,14 @@ def download_package_pdf(
 
     _package_download_guard(package)
 
-    from app.services.cloud_storage import CloudStorageService
-    storage_svc = CloudStorageService()
-    url_or_path = storage_svc.get_download_url(package.storage_reference)
-    
-    if package.storage_reference.startswith("local://"):
-        return FileResponse(
-            path=url_or_path,
-            media_type="application/pdf",
-            filename=f"package_{package.version}.pdf",
-            content_disposition_type="inline"
-        )
-    
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url=url_or_path)
+    from app.services.storage_download import artifact_file_response
+
+    return artifact_file_response(
+        package.storage_reference,
+        filename=f"package_{package.version}.pdf",
+        media_type="application/pdf",
+        inline=True,
+    )
 
 
 @router.get("/projects/{project_id}/packages", response_model=PackageListResponse)
@@ -315,20 +309,14 @@ def download_specific_package_pdf(
 
     _package_download_guard(package)
 
-    from app.services.cloud_storage import CloudStorageService
-    storage_svc = CloudStorageService()
-    url_or_path = storage_svc.get_download_url(package.storage_reference)
-    
-    if package.storage_reference.startswith("local://"):
-        return FileResponse(
-            path=url_or_path,
-            media_type="application/pdf",
-            filename=f"package_{package.version}.pdf",
-            content_disposition_type="inline"
-        )
-    
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url=url_or_path)
+    from app.services.storage_download import artifact_file_response
+
+    return artifact_file_response(
+        package.storage_reference,
+        filename=f"package_{package.version}.pdf",
+        media_type="application/pdf",
+        inline=True,
+    )
 
 
 # ---------------------------------------------------------------------------

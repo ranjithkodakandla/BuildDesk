@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = False
 
-    # CORS – comma-separated list handled as a list by pydantic-settings
-    allowed_origins: List[str] = ["http://localhost:5173"]
+    # CORS – comma-separated origins (env: ALLOWED_ORIGINS)
+    allowed_origins: str = "http://localhost:5173"
 
     # Database
     database_url: str = "sqlite:///./builddesk.db"
@@ -35,7 +35,12 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
-    # GCP (Phase 2 / 3)
+    # Artifact storage (Phase 16)
+    use_local_storage: bool = True
+    storage_bucket: str = "builddesk-artifacts-local"
+    gcs_signed_url_ttl_seconds: int = 3600
+
+    # GCP
     gcp_project_id: str = ""
     gcp_region: str = "us-central1"
 
@@ -46,8 +51,20 @@ class Settings(BaseSettings):
     )
 
     @property
+    def cors_origins(self) -> List[str]:
+        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
+
+    @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @property
+    def jwt_secret_is_default(self) -> bool:
+        return self.jwt_secret_key == "CHANGE-ME-IN-PRODUCTION-use-openssl-rand-hex-32"
+
+    @property
+    def artifact_storage_mode(self) -> str:
+        return "local" if self.use_local_storage else "gcs"
 
 
 @lru_cache

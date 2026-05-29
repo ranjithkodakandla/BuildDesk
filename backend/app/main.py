@@ -28,6 +28,7 @@ from app.api.rfis import router as rfis_router
 from app.api.search import router as search_router
 from app.api.tenants import router as tenants_router
 from app.config import get_settings
+from app.startup_checks import has_blocking_errors, log_startup_checks, run_startup_checks
 
 # ---------------------------------------------------------------------------
 # Application factory
@@ -35,7 +36,6 @@ from app.config import get_settings
 
 from contextlib import asynccontextmanager
 
-from app.config import get_settings
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
@@ -44,6 +44,11 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        checks = run_startup_checks(settings)
+        log_startup_checks(checks)
+        if has_blocking_errors(checks) and settings.is_production:
+            raise RuntimeError("Blocking production configuration errors — see startup logs.")
+
         if settings.use_sql_repository:
             from app.db.session import engine
             backend_type = "postgres" if "postgresql" in settings.database_url else "sqlite"
@@ -78,7 +83,7 @@ def create_app() -> FastAPI:
 
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.allowed_origins,
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

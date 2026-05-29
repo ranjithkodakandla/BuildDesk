@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 15 deployment readiness checks (local / CI).
+Phase 16 deployment readiness checks (local / CI).
 
 Validates configuration and migration state without requiring live GCP credentials.
 """
@@ -16,9 +16,11 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, text
 
 from app.config import get_settings
+from app.startup_checks import run_startup_checks
 
 
 def main() -> int:
+    get_settings.cache_clear()
     settings = get_settings()
     checks: list[tuple[str, bool, str]] = []
 
@@ -29,14 +31,18 @@ def main() -> int:
     ))
     checks.append((
         "jwt_secret_not_default",
-        settings.jwt_secret_key != "CHANGE-ME-IN-PRODUCTION-use-openssl-rand-hex-32"
-        or settings.app_env != "production",
-        "production must override JWT secret",
+        not settings.jwt_secret_is_default or not settings.is_production,
+        "ok" if not settings.jwt_secret_is_default else "default (dev only)",
     ))
     checks.append((
         "sql_repository_mode",
-        True,
+        settings.use_sql_repository,
         f"use_sql_repository={settings.use_sql_repository}",
+    ))
+    checks.append((
+        "artifact_storage_mode",
+        True,
+        f"{settings.artifact_storage_mode} bucket={settings.storage_bucket}",
     ))
 
     alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "..", "alembic.ini"))
@@ -52,15 +58,7 @@ def main() -> int:
     except Exception as exc:
         checks.append(("database_connectivity", False, str(exc)))
 
-    # GCS: document live validation requirement
-    use_local = os.getenv("USE_LOCAL_STORAGE", "True").lower() in ("true", "1", "yes")
-    checks.append((
-        "artifact_storage_mode",
-        True,
-        "local mock" if use_local else f"GCS bucket {os.getenv('STORAGE_BUCKET', '')}",
-    ))
-
-    print("BuildDesk Phase 15 Deployment Readiness")
+    print("BuildDesk Phase 16 Deployment Readiness")
     print("=" * 50)
     failed = 0
     for name, ok, detail in checks:
@@ -69,10 +67,17 @@ def main() -> int:
             failed += 1
         print(f"[{status}] {name}: {detail}")
 
-    print("\nLive cloud validation (manual):")
-    print("  - Cloud Run health: GET /api/v1/health")
-    print("  - Cloud SQL: alembic upgrade head on production DSN")
-    print("  - GCS: set USE_LOCAL_STORAGE=false and STORAGE_BUCKET")
+    print("\nStartup checks (production rules):")
+    for sc in run_startup_checks(settings):
+        mark = "PASS" if sc.ok else "FAIL"
+        if sc.level == "error" and not sc.ok:
+            failed += 1
+        print(f"  [{mark}] {sc.name} ({sc.level}): {sc.detail}")
+
+    print("\nLive cloud validation:")
+    print("  - Cloud Run: GET /api/v1/health")
+    print("  - GCS: USE_LOCAL_STORAGE=false + service account storage.objectAdmin")
+    print("  - CORS: browser preflight from frontend origin")
     return 1 if failed else 0
 
 

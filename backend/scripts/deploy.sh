@@ -8,12 +8,17 @@ PROJECT_ID=${GCP_PROJECT_ID:-"my-gcp-project"}
 REGION=${GCP_REGION:-"us-central1"}
 REPO_NAME=${GCP_REPO_NAME:-"builddesk-repo"}
 SERVICE_NAME=${GCP_SERVICE_NAME:-"builddesk-api"}
+STORAGE_BUCKET=${STORAGE_BUCKET:-"builddesk-artifacts-${PROJECT_ID}"}
+ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-"http://localhost:5173"}
+USE_LOCAL_STORAGE=${USE_LOCAL_STORAGE:-"false"}
 IMAGE_TAG=$(git rev-parse --short HEAD)
 IMAGE_URL="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:${IMAGE_TAG}"
 
 echo "🚀 Deploying BuildDesk Backend to GCP Cloud Run"
 echo "Project: $PROJECT_ID | Region: $REGION"
 echo "Image:   $IMAGE_URL"
+echo "Storage: USE_LOCAL_STORAGE=$USE_LOCAL_STORAGE bucket=$STORAGE_BUCKET"
+echo "CORS:    $ALLOWED_ORIGINS"
 echo "------------------------------------------------"
 
 # 1. Build the image
@@ -39,7 +44,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --platform managed \
   --allow-unauthenticated \
   $CLOUDSQL_ARGS \
-  --set-env-vars APP_ENV=production,USE_SQL_REPOSITORY=true,USE_LOCAL_STORAGE=true \
+  --set-env-vars "APP_ENV=production,USE_SQL_REPOSITORY=true,USE_LOCAL_STORAGE=${USE_LOCAL_STORAGE},STORAGE_BUCKET=${STORAGE_BUCKET},GCP_PROJECT_ID=${PROJECT_ID},ALLOWED_ORIGINS=${ALLOWED_ORIGINS}" \
   --set-secrets DATABASE_URL=BUILDDESK_DATABASE_URL:latest,JWT_SECRET_KEY=BUILDDESK_JWT_SECRET:latest \
   --quiet
 

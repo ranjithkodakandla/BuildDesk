@@ -1,4 +1,4 @@
-.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres cloud-build cloud-run-local deploy-gcp deploy-cloudsql check-health cloud-logs staging-validate
+.PHONY: run test migrate docker-build docker-up postgres-up postgres-down migrate-postgres cloud-build cloud-run-local deploy-gcp deploy-cloudsql check-health cloud-logs staging-validate load-validate
 
 STAGING_URL ?= https://builddesk-api-149130710868.us-central1.run.app
 
@@ -53,6 +53,9 @@ cloud-logs:
 
 staging-validate:
 	STAGING_API_URL=$(STAGING_URL) python scripts/run_staging_validation.py
+
+load-validate:
+	STAGING_API_URL=$(STAGING_URL) python scripts/run_load_validation.py
 
 check-staging-health:
 	curl -s $(STAGING_URL)/api/v1/health | python -m json.tool

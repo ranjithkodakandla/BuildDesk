@@ -793,4 +793,4 @@ Phase 14.5 closed the loop between tenant profile configuration and issued-packa
 - **Tenant bootstrap:** Register must create a `tenants` row before `users` insert when using Cloud SQL FKs (`auth.py` `_ensure_tenant_exists`). Live register returns **201 + JWT**.
 - **Package manifest persistence:** `PackageRepository.save_package()` must `flush()` the parent `project_packages` row before bulk-inserting `package_pages` (FK ordering on large manifests).
 - **Live baseline URL:** `https://builddesk-api-149130710868.us-central1.run.app` (also `docs/gcp-live-notes.md`).
-- **Artifact durability:** Production requires GCS (`USE_LOCAL_STORAGE=false`); current revision uses `USE_LOCAL_STORAGE=true` and container-local `mock_gcs` paths (ephemeral). See `docs/phase15-5d-live-deployment-report.md`.
+- **Artifact durability (Phase 16):** `CloudStorageService` uploads to GCS when `USE_LOCAL_STORAGE=false`. Package and export downloads stream through authenticated API routes (avoids signed-URL keys on Cloud Run). Bucket: `builddesk-artifacts-stonedesk-app`. See `docs/phase16-production-signoff-report.md`.

@@ -1,0 +1,22 @@
+{
+  "base_url": "https://builddesk-api-149130710868.us-central1.run.app",
+  "unit_count": 200,
+  "health": {
+    "status": "ok",
+    "service": "buildesk-api",
+    "version": "0.1.0",
+    "database": "cloudsql-postgres-connected",
+    "tenant_mode": true
+  },
+  "assembly_setup_s": 2.99,
+  "assemblies_created": 8,
+  "bulk_units_s": 0.72,
+  "units_created": 200,
+  "package_poll_s": 1.93,
+  "generation_attempts": 1,
+  "storage_reference": "gs://builddesk-artifacts-stonedesk-app/projects/77b28bb8-43dd-4eb6-91a9-6019056b2cc9/packages/46be5677-497e-406e-8992-e2f50b97fc5f.pdf",
+  "page_count": 7,
+  "pdf_download_s": 0.47,
+  "pdf_bytes": 19517,
+  "total_s": 9.53
+}
