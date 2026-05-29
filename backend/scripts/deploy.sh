@@ -39,8 +39,8 @@ gcloud run deploy "$SERVICE_NAME" \
   --platform managed \
   --allow-unauthenticated \
   $CLOUDSQL_ARGS \
-  --set-env-vars APP_ENV=production,USE_SQL_REPOSITORY=true \
-  --set-secrets DATABASE_URL=BUILDDESK_DATABASE_URL:latest \
+  --set-env-vars APP_ENV=production,USE_SQL_REPOSITORY=true,USE_LOCAL_STORAGE=false \
+  --set-secrets DATABASE_URL=BUILDDESK_DATABASE_URL:latest,JWT_SECRET_KEY=BUILDDESK_JWT_SECRET:latest \
   --quiet
 
 echo "✅ Deployment completed successfully!"

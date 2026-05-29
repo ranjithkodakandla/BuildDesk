@@ -319,6 +319,15 @@ Corrected roadmap:
 - **Technical Debt:** Pydantic `model_dump()` in import paths; timezone-aware datetimes in RFI and package approval APIs.
 - **Validation:** Backend pytest `70 / 70`; frontend `17 / 17`; pilot workflow green.
 
+### Phase 15.5: Live Staging Validation (✅ Complete — with live blockers documented)
+**Goal:** Prove deployed system on Cloud Run + Cloud SQL without new product features.
+- **Live checks:** Health + Cloud SQL connectivity **PASS** on `builddesk-api-149130710868.us-central1.run.app`.
+- **Live blocker:** `POST /auth/register` **500** — missing `tenants` row for new `X-Tenant-ID` (FK); fixed via `_ensure_tenant_exists` on register (needs redeploy).
+- **Tooling:** `backend/scripts/run_staging_validation.py` + `docs/phase15-5-staging-validation.md`.
+- **Deploy audit:** JWT secret + GCS gaps documented; `deploy.sh` updated for JWT secret + `USE_LOCAL_STORAGE=false`.
+- **Local proxy:** Pilot E2E ~2.6s (150 units); full live 200-unit run pending redeploy.
+- **Validation:** Backend pytest `71 / 71`; frontend `17 / 17`.
+
 Deferred:
   □ Complex BI Dashboards
   □ StoneDesk integration

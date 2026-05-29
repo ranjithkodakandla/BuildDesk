@@ -786,3 +786,10 @@ Phase 14.5 closed the loop between tenant profile configuration and issued-packa
 - **Failure visibility:** Package status API returns generation metadata; PDF download returns `409` with error detail when generation failed.
 - **Tenant safety:** Import/export routes validate `project_id` path matches job ownership; hierarchy and repository layers continue to scope by `tenant_id`.
 - **Deployment checks:** `validate_deployment_readiness.py` verifies Alembic head, DB connectivity, and environment flags locally; GCS/Cloud Run validation documented for live environments.
+
+### Live Staging Validation (Phase 15.5)
+
+- **Staging runner:** `run_staging_validation.py` exercises the deployed API via httpx (auth → hierarchy → 200-unit bulk → package → exports → RFI/approval).
+- **Tenant bootstrap:** Register must create a `tenants` row before `users` insert when using Cloud SQL FKs (`auth.py` `_ensure_tenant_exists`).
+- **Live baseline URL:** Documented in `frontend/.env` and `docs/gcp-live-notes.md` (Cloud Run `us-central1`).
+- **Artifact durability:** Production requires GCS (`USE_LOCAL_STORAGE=false`); current Cloud Run revision may still use container-local PDF paths unless redeployed with storage work.

@@ -18,8 +18,24 @@ from pydantic import BaseModel, EmailStr, Field
 from app.auth.dependencies import get_current_tenant, get_user_repository, require_active_user
 from app.auth.jwt import create_access_token
 from app.auth.password import hash_password, verify_password
+from app.dependencies import get_tenant_repository
+from app.models.tenant import Tenant
 from app.models.user import User
+from app.repositories.tenant_repository import TenantRepository
 from app.repositories.user_repository import UserRepository
+
+
+def _ensure_tenant_exists(tenant_id: uuid.UUID, email: str, tenant_repo: TenantRepository) -> None:
+    """Cloud SQL requires a tenants row before users can be inserted (FK)."""
+    if tenant_repo.get_by_id(tenant_id) is None:
+        tenant_repo.save(
+            Tenant(
+                tenant_id=tenant_id,
+                name=f"Tenant {str(tenant_id)[:8]}",
+                slug=f"tenant-{str(tenant_id)[:8]}",
+                contact_email=email,
+            )
+        )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -75,7 +91,9 @@ def register(
     body: RegisterRequest,
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     repo: UserRepository = Depends(get_user_repository),
+    tenant_repo: TenantRepository = Depends(get_tenant_repository),
 ) -> TokenResponse:
+    _ensure_tenant_exists(tenant_id, body.email, tenant_repo)
     # Enforce uniqueness within tenant
     existing = repo.get_by_email(tenant_id, body.email)
     if existing:
