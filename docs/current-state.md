@@ -319,6 +319,13 @@ Corrected roadmap:
 - **Technical Debt:** Pydantic `model_dump()` in import paths; timezone-aware datetimes in RFI and package approval APIs.
 - **Validation:** Backend pytest `70 / 70`; frontend `17 / 17`; pilot workflow green.
 
+### Frontend Live Deployment (✅ Complete — `feat/frontend-live-validation`)
+**Goal:** Deploy frontend against live API; real browser validation.
+- **URL:** https://builddesk-web-149130710868.us-central1.run.app (Cloud Run nginx static)
+- **Fixes:** `/api/v1` base URL; authenticated PDF/export/SVG downloads; CORS for frontend origin
+- **E2E:** Playwright 2/2 pass (register, settings, project workspace, export modal)
+- **Docs:** `docs/frontend-live-validation.md`
+
 ### Phase 16: Production Persistence & Launch Sign-off (✅ Complete — canonical `canonical-phase16`)
 **Goal:** Close staging→production gaps (durability, CORS, validation) without new product features.
 - **Canonical:** `canonical-phase16` @ `3425c68`; live revision `builddesk-api-00019-6p8`; image tag `3425c68`.

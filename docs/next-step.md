@@ -1,46 +1,39 @@
 # Next Step
 
-> Auto-updated after Phase 16 consolidation. Read `docs/session-start.md` before new work.
+> Updated after frontend live deployment and E2E validation.
 
 ---
 
 ## Current State
 
-| Field              | Value |
-|--------------------|--------|
-| Last completed phase | Phase 16 — Production Persistence & Launch Sign-off (consolidated) |
-| **Canonical baseline** | **`canonical-phase16`** @ `394aad4` (runtime/deploy `3425c68`) |
-| Feature branch (merged) | `feat/phase16-production-signoff` |
-| Test baseline | Backend **76 / 76** pytest; frontend **17 / 17**; build OK |
-| Live revision | `builddesk-api-00019-6p8` |
-| Live URL | `https://builddesk-api-149130710868.us-central1.run.app` |
-| GCS bucket | `builddesk-artifacts-stonedesk-app` |
-| Alembic head | `a8f1c2d3e4b5` |
-| Production verdict | **CONDITIONAL GO** |
+| Field | Value |
+|-------|--------|
+| Canonical baseline | `canonical-phase16` |
+| Active branch | `feat/frontend-live-validation` |
+| Backend API | https://builddesk-api-149130710868.us-central1.run.app (`builddesk-api-00020-msm`) |
+| **Frontend (live)** | https://builddesk-web-149130710868.us-central1.run.app |
+| Tests | Backend 76/76; frontend 17/17; Playwright E2E 2/2 |
+| Verdict | **CONDITIONAL GO** (full-stack pilot) |
 
 ---
 
-## Consolidation complete
+## Completed
 
-Phase 16 is locked on `canonical-phase16`. No open code blockers from Phase 15/15.5 (FK fix committed in `701b9e2`, GCS in `3425c68`).
-
-**Before starting new work:** checkout `canonical-phase16`, run session-start protocol, read `docs/phase16-final-closeout-report.md`.
-
----
-
-## Remaining operational items (not code blockers)
-
-| Item | Owner |
-|------|--------|
-| Manual browser sign-off (`docs/phase16-browser-validation.md`) | Operator |
-| Production frontend origin in `ALLOWED_ORIGINS` | When static app is hosted |
-| GCS lifecycle/retention policy | Ops |
-| Full-fidelity load test (300+ units, dense drawings) | Optional pre-SLA |
+- Frontend deployed to Cloud Run (`builddesk-web`)
+- CORS aligned for production frontend origin
+- Production API path + authenticated download fixes
+- Playwright live smoke: register → dashboard → project → settings/packages/export UI
 
 ---
 
-## Reference docs
+## Remaining (operational)
 
-- `docs/phase16-final-closeout-report.md` — consolidation & readiness matrix
-- `docs/phase16-production-signoff-report.md` — Phase 16 implementation sign-off
-- `docs/phase16-browser-validation.md` — operator browser checklist
+- Extended browser E2E: package generate, PDF download, assemblies, RFI/approval
+- Optional custom domain for frontend
+- GCS lifecycle policy (ops)
+
+---
+
+## Reference
+
+- `docs/frontend-live-validation.md`

@@ -38,8 +38,11 @@ const ExportModal: React.FC<ExportModalProps> = ({ projectId, onClose }) => {
     }
   };
 
-  const handleDownload = (jobId: string) => {
-    exportsApi.downloadExport(projectId, jobId);
+  const handleDownload = (job: ExportJobResponse) => {
+    exportsApi.downloadExport(projectId, job.job_id, job.format).catch((err) => {
+      console.error(err);
+      alert('Export download failed');
+    });
   };
 
   return (
@@ -111,7 +114,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ projectId, onClose }) => {
                     <div>
                       {job.status === 'completed' ? (
                         <button
-                          onClick={() => handleDownload(job.job_id)}
+                          onClick={() => handleDownload(job)}
                           className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded transition-colors"
                         >
                           Download

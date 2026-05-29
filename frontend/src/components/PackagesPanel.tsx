@@ -63,9 +63,13 @@ export const PackagesPanel: React.FC<Props> = ({ project }) => {
     }
   };
 
-  const downloadPdf = (packageId?: string) => {
-    const url = packagesApi.getPdfUrl(project.project_id, packageId);
-    window.open(url, '_blank');
+  const downloadPdf = async (packageId?: string, versionLabel?: string) => {
+    try {
+      await packagesApi.downloadPdf(project.project_id, packageId, versionLabel || 'package');
+    } catch (e) {
+      console.error(e);
+      alert('PDF download failed. Ensure you are logged in and the package is ready.');
+    }
   };
 
   if (loading) return <div>Loading package status...</div>;
@@ -96,7 +100,7 @@ export const PackagesPanel: React.FC<Props> = ({ project }) => {
             </div>
             
             {pkg.status === ProjectPackageStatus.READY && (
-              <button onClick={() => downloadPdf()} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-bold shadow-sm">
+              <button onClick={() => downloadPdf(undefined, pkg.version)} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-bold shadow-sm">
                 Download PDF
               </button>
             )}
@@ -187,7 +191,7 @@ export const PackagesPanel: React.FC<Props> = ({ project }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {hPkg.status === ProjectPackageStatus.READY && (
                         <button 
-                          onClick={() => downloadPdf(hPkg.package_id)}
+                          onClick={() => downloadPdf(hPkg.package_id, hPkg.version)}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
                           Download

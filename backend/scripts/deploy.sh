@@ -9,6 +9,7 @@ REGION=${GCP_REGION:-"us-central1"}
 REPO_NAME=${GCP_REPO_NAME:-"builddesk-repo"}
 SERVICE_NAME=${GCP_SERVICE_NAME:-"builddesk-api"}
 STORAGE_BUCKET=${STORAGE_BUCKET:-"builddesk-artifacts-${PROJECT_ID}"}
+# Comma-separated origins; use gcloud ^;^ delimiter when deploying (see below)
 ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-"http://localhost:5173"}
 USE_LOCAL_STORAGE=${USE_LOCAL_STORAGE:-"false"}
 IMAGE_TAG=$(git rev-parse --short HEAD)
@@ -44,7 +45,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --platform managed \
   --allow-unauthenticated \
   $CLOUDSQL_ARGS \
-  --set-env-vars "APP_ENV=production,USE_SQL_REPOSITORY=true,USE_LOCAL_STORAGE=${USE_LOCAL_STORAGE},STORAGE_BUCKET=${STORAGE_BUCKET},GCP_PROJECT_ID=${PROJECT_ID},ALLOWED_ORIGINS=${ALLOWED_ORIGINS}" \
+  --set-env-vars "^;^APP_ENV=production;USE_SQL_REPOSITORY=true;USE_LOCAL_STORAGE=${USE_LOCAL_STORAGE};STORAGE_BUCKET=${STORAGE_BUCKET};GCP_PROJECT_ID=${PROJECT_ID};ALLOWED_ORIGINS=${ALLOWED_ORIGINS}" \
   --set-secrets DATABASE_URL=BUILDDESK_DATABASE_URL:latest,JWT_SECRET_KEY=BUILDDESK_JWT_SECRET:latest \
   --quiet
 

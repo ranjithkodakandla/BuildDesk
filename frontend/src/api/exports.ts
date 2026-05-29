@@ -1,4 +1,4 @@
-import client from './client';
+import client, { resolveApiV1Base } from './client';
 
 export type ExportType = 'schedule' | 'fabrication' | 'summary';
 export type ExportFormat = 'csv' | 'xlsx';
@@ -22,44 +22,47 @@ export interface ExportJobResponse {
   updated_at: string;
 }
 
+const TOKEN_KEY = 'bd_token';
+const TENANT_KEY = 'bd_tenant_id';
+
 export const exportsApi = {
   requestExport: async (projectId: string, request: ExportJobRequest): Promise<ExportJobResponse> => {
     const response = await client.post(`/projects/${projectId}/exports`, request);
     return response.data;
   },
-  
+
   listExports: async (projectId: string): Promise<ExportJobResponse[]> => {
     const response = await client.get(`/projects/${projectId}/exports`);
     return response.data;
   },
 
-  downloadExport: (projectId: string, jobId: string) => {
-    // In a real implementation we would get a signed URL or fetch as Blob
-    // Here we can directly fetch and trigger download using native JS
-    const token = localStorage.getItem('token');
-    const tenantId = localStorage.getItem('tenant_id') || '11111111-1111-1111-1111-111111111111';
-    
-    fetch(`${client.defaults.baseURL}/projects/${projectId}/exports/${jobId}/download`, {
+  downloadExport: async (projectId: string, jobId: string, format: ExportFormat): Promise<void> => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const tenantId = localStorage.getItem(TENANT_KEY);
+    const url = `${resolveApiV1Base()}/projects/${projectId}/exports/${jobId}/download`;
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'X-Tenant-ID': tenantId
-      }
-    })
-    .then(response => {
-      if (!response.ok) throw new Error('Download failed');
-      return response.blob();
-    })
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `export_${jobId}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    })
-    .catch(err => console.error(err));
-  }
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Download failed (${response.status})`);
+    }
+
+    const blob = await response.blob();
+    const ext = format === 'xlsx' ? 'xlsx' : 'csv';
+    const objectUrl = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.style.display = 'none';
+    anchor.href = objectUrl;
+    anchor.download = `export_${jobId}.${ext}`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    window.URL.revokeObjectURL(objectUrl);
+    anchor.remove();
+  },
 };

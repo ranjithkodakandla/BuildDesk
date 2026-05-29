@@ -13,16 +13,34 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
   const [loading, setLoading] = useState(false);
   const [svgUrl, setSvgUrl] = useState('');
 
-  // Fetch full assembly details to ensure we have all nested data
+  const loadSvgPreview = async (assemblyId: string) => {
+    try {
+      const url = await assembliesApi.fetchSvgPreviewUrl(assemblyId);
+      setSvgUrl((prev) => {
+        if (prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+        return url;
+      });
+    } catch (e) {
+      console.error('SVG preview failed', e);
+      setSvgUrl('');
+    }
+  };
+
   useEffect(() => {
     const fetchFull = async () => {
       if (initialAsm.assembly_id) {
         const full = await assembliesApi.getAssembly(initialAsm.assembly_id);
         setAsm(full);
-        setSvgUrl(assembliesApi.getSvgPreviewUrl(initialAsm.assembly_id));
+        await loadSvgPreview(initialAsm.assembly_id);
       }
     };
     fetchFull();
+    return () => {
+      setSvgUrl((prev) => {
+        if (prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+        return '';
+      });
+    };
   }, [initialAsm.assembly_id]);
 
   const handleSave = async () => {
@@ -40,7 +58,7 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
         notes: asm.notes,
       });
       setAsm(updated);
-      setSvgUrl(`${assembliesApi.getSvgPreviewUrl(asm.assembly_id)}?t=${Date.now()}`);
+      await loadSvgPreview(asm.assembly_id);
       onSaved();
     } catch (e) {
       console.error(e);

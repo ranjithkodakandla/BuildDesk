@@ -38,18 +38,18 @@ export interface HealthResponse {
 
 export const authApi = {
   register: (tenantId: string, body: RegisterRequest) =>
-    apiClient.post<TokenResponse>('/api/v1/auth/register', body, {
+    apiClient.post<TokenResponse>('/auth/register', body, {
       headers: { 'X-Tenant-ID': tenantId },
     }),
 
   login: (tenantId: string, body: LoginRequest) =>
-    apiClient.post<TokenResponse>('/api/v1/auth/login', body, {
+    apiClient.post<TokenResponse>('/auth/login', body, {
       headers: { 'X-Tenant-ID': tenantId },
     }),
 
-  me: () => apiClient.get<UserProfile>('/api/v1/auth/me'),
+  me: () => apiClient.get<UserProfile>('/auth/me'),
 };
 
 export const healthApi = {
-  check: () => apiClient.get<HealthResponse>('/api/v1/health'),
+  check: () => apiClient.get<HealthResponse>('/health'),
 };

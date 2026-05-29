@@ -5,11 +5,12 @@ import client from '../api/client';
 
 // Mock the axios client
 vi.mock('../api/client', () => ({
+  resolveApiV1Base: () => 'http://localhost:8000/api/v1',
   default: {
     get: vi.fn(),
     post: vi.fn(),
-    defaults: { baseURL: 'http://localhost:8000/api/v1' }
-  }
+    defaults: { baseURL: 'http://localhost:8000/api/v1' },
+  },
 }));
 
 describe('Packages API', () => {
