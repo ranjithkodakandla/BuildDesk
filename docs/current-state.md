@@ -135,10 +135,53 @@ Completed:
   ✓ Alembic migration applied to Cloud SQL PostgreSQL
   ✓ Live validation on Cloud Run: register, login, /me, protected route, 401 enforcement
 
-Total smoke tests: 131 / 131 passing (21 new auth tests).
+✓ Frontend Foundation Layer v1
+  ✓ React + Vite + TypeScript + Tailwind CSS v4 (dark theme)
+  ✓ Centralized Axios API client with Bearer token injection and 401 auto-logout
+  ✓ Typed API modules: auth.ts, geometry.ts (all routes)
+  ✓ Zustand auth store with localStorage persistence and session bootstrap
+  ✓ Login page: tenant ID, email, password, error display
+  ✓ Register page: tenant ID, email, password, role selector
+  ✓ Protected routing via ProtectedRoute component
+  ✓ Dashboard: user info, tenant ID, live health check, 5 quick-action shape cards
+  ✓ Geometry Workspace: shape selector, dimension inputs, geometry result, SVG preview, PDF download
+  ✓ Vite dev proxy: /api/* → Cloud Run (eliminates CORS in local dev)
+  ✓ Build verified: 0 TypeScript errors, 88 modules, 298KB bundle
+  ✓ 11 frontend unit tests (11/11 passing)
+  ✓ Live end-to-end validated: login → dashboard → SVG preview → PDF download
 
-Next:
+Total smoke tests: 142 / 142 passing (11 new frontend tests).
 
-□ Async Engine Migration (asyncpg)
-□ Frontend React integration
-□ JWT refresh token flow
+⚠️ Domain Model Correction — Architecture Realignment
+  BuildDesk has been reframed around the ACTUAL business problem:
+  multifamily countertop fabrication package generation.
+
+  Full correction document: docs/domain-model-correction.md
+
+  Key corrections:
+  - Project hierarchy: Project → Building (opt) → Floor (opt) → Unit → UnitType
+  - Assembly model: Assembly → Part → Cutout/Hole/Splash/Edge/Seam/FabricationNote
+  - ProjectPackage: Cover + TypeSheets + DrawingPages + SummaryPage
+  - Variants: MIR, ADA, LEFT, RIGHT, REV, Custom
+  - PDF = full fabrication package, not one shape → one PDF
+
+Subsystem reuse decisions:
+  ✅ KEEP:  geometry/primitives.py, svg_exporter core, JWT auth, DB session,
+            repository pattern, tenant isolation, FastAPI structure
+  ⚠️ WRAP:  GeometryBuilder (add assembly path), PdfExporter (add PackagePdfExporter),
+            TemplateResolver (keep for compat), ProjectRecord (extend additively)
+  ❌ REPLACE: SHAPE_REGISTRY → AssemblyTemplateRegistry, demo.py,
+              single-shape PDF as primary workflow
+
+Corrected roadmap:
+  Phase 1: Flexible Project Hierarchy → IN PROGRESS (next)
+  Phase 2: Assembly & Fabrication Model
+  Phase 3: Project Package Generator (multi-page PDF)
+  Phase 4: Advanced Drawing Logic (cutouts, holes, edges, seams)
+  Phase 5: UI Realignment to real workflow
+
+Blocked until Phase 3 designed:
+  □ asyncpg migration
+  □ Frontend feature expansion
+  □ Generic geometry demos
+  □ Generic dashboard CRUD
