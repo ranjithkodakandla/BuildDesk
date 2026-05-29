@@ -3,10 +3,12 @@ import { useAuthStore } from '../store/authStore';
 
 // In development the Vite proxy handles /api/* → backend.
 // In production builds, VITE_API_BASE_URL must be set.
-const BASE_URL =
-  import.meta.env.DEV
-    ? ''  // Use relative URL; Vite dev proxy handles it
-    : (import.meta.env.VITE_API_BASE_URL || '');
+const PRODUCTION_API =
+  'https://builddesk-api-149130710868.us-central1.run.app';
+
+const BASE_URL = import.meta.env.DEV
+  ? '' // Vite dev proxy handles /api
+  : (import.meta.env.VITE_API_BASE_URL || PRODUCTION_API);
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,

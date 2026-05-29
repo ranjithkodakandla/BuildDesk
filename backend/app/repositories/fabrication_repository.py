@@ -162,6 +162,7 @@ class FabricationRepository:
         ar.assembly_type = assembly.assembly_type.value
         ar.variant = assembly.variant.value
         ar.updated_at = _utcnow()
+        self.session.flush()
 
         # 2. DELETE existing nested records to perform full replace
         # (Safer and simpler than complex diffing for piece-level updates)
@@ -202,6 +203,8 @@ class FabricationRepository:
                 created_at=_utcnow(),
             )
             self.session.add(pr)
+            # Parent part must exist before edge/cutout/hole/splash FK inserts (PostgreSQL).
+            self.session.flush()
 
             for edge in part.edges:
                 er = EdgeTreatmentRecord(

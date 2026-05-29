@@ -8,6 +8,10 @@
 
 | Field              | Value |
 |--------------------|--------|
+| Active branch | `feat/reference-pdf-validation` — domain fidelity recovery |
+| Reference verdict | **NO-GO** — [`reference-pdf-validation.md`](./reference-pdf-validation.md) |
+| Recovery verdict | **CONDITIONAL GO** — [`domain-fidelity-recovery-report.md`](./domain-fidelity-recovery-report.md) |
+| Live API revision | `builddesk-api-00021-br6` (fabrication FK flush fix) |
 | Last completed phase | Phase 16 — Production Persistence & Launch Sign-off (consolidated) |
 | **Canonical baseline** | **`canonical-phase16`** @ `394aad4` (runtime/deploy `3425c68`) |
 | Feature branch (merged) | `feat/phase16-production-signoff` |

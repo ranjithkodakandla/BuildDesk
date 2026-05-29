@@ -1,0 +1,6 @@
+APP_ENV: production
+USE_SQL_REPOSITORY: "true"
+USE_LOCAL_STORAGE: "false"
+STORAGE_BUCKET: builddesk-artifacts-stonedesk-app
+GCP_PROJECT_ID: stonedesk-app
+ALLOWED_ORIGINS: "http://localhost:5173,https://builddesk-web-149130710868.us-central1.run.app"

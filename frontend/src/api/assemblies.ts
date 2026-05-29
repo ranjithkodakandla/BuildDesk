@@ -4,7 +4,10 @@ import { Assembly } from '../types/fabrication';
 export const assembliesApi = {
   listAssemblies: async (projectId: string): Promise<Assembly[]> => {
     const res = await client.get(`/assemblies`, { params: { project_id: projectId } });
-    return res.data;
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.assemblies)) return data.assemblies;
+    return [];
   },
   getAssembly: async (assemblyId: string): Promise<Assembly> => {
     const res = await client.get(`/assemblies/${assemblyId}`);

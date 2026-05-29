@@ -30,7 +30,10 @@ from reportlab.lib.pagesizes import landscape, letter
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
-from app.exporters.fabrication_drawing_engine import FabricationDrawingEngine
+from app.exporters.fabrication_drawing_engine import (
+    FabricationDrawingEngine,
+    format_dimension_inch_mm,
+)
 from app.models.fabrication import Assembly, Part
 from app.models.hierarchy import Project
 from app.models.tenant import Tenant
@@ -414,54 +417,60 @@ class PackagePdfExporter:
             return
 
         asm = assemblies[0]   # representative assembly
+        use_shop = asm.assembly_type.value == "custom" and len(asm.parts) >= 4
 
-        # ── Drawing zone (left column) ─────────────────────────────────
         draw_zone_x = _M
         draw_zone_y = body_bot
-        draw_zone_w = _DRAW_W
+        draw_zone_w = _DRAW_W - 0.05 * inch
         draw_zone_h = draw_h - 0.15 * inch
 
-        # Light background for drawing zone
         c.setFillColor(HexColor("#f8fafc"))
         c.setStrokeColor(HexColor("#cccccc"))
         c.setLineWidth(0.5)
         c.rect(draw_zone_x, draw_zone_y, draw_zone_w, draw_zone_h, fill=1, stroke=1)
 
-        # Render vector drawing
-        self._engine.draw_assembly(
-            c=c, assembly=asm,
-            zone_x=draw_zone_x + 6, zone_y=draw_zone_y + 6,
-            zone_w=draw_zone_w - 12, zone_h=draw_zone_h - 36,
-            is_mirror=group.is_mirror,
+        inner_x = draw_zone_x + 6
+        inner_y = draw_zone_y + 6
+        inner_w = draw_zone_w - 12
+        inner_h = draw_zone_h - 12
+
+        legend_h = self._engine.draw_granite_quartz_key_notes(
+            c, inner_x + inner_w - 205, inner_y + inner_h - 4, w=200
         )
 
-        # Scale callout below drawing zone
-        c.setFont("Helvetica-Oblique", 7)
-        c.setFillColor(_C_GREY)
-        c.drawString(draw_zone_x, draw_zone_y - 10, "Scale: NTS (Not To Scale)")
-
-        # Edge legend bottom-left of drawing zone
-        self._engine.draw_edge_legend(c, draw_zone_x, draw_zone_y - 14)
-
-        # ── Title block (bottom of drawing zone) ───────────────────────
-        tb_h = 28.0
-        tb_y = draw_zone_y
-        c.setFillColor(HexColor("#eef2f7"))
-        c.setStrokeColor(HexColor("#bbbbbb"))
-        c.setLineWidth(0.5)
-        c.rect(draw_zone_x, tb_y - tb_h, draw_zone_w, tb_h, fill=1, stroke=1)
-        c.setFont("Helvetica-Bold", 7)
         c.setFillColor(_C_DARK)
-        c.drawString(draw_zone_x + 4, tb_y - 11,
-                     f"Project: {project.name[:40]}")
-        c.setFont("Helvetica", 7)
-        c.drawString(draw_zone_x + 4, tb_y - 21,
-                     f"Type: {group.unit_type_code}  |  {label}  |  "
-                     f"Sheet {self._page_num} of {self._total_pages}  |  Rev: {version}")
+        c.setFont("Helvetica-Bold", 14)
+        c.drawCentredString(inner_x + inner_w / 2, inner_y + inner_h - 18, f"QTY={group.unit_count}")
 
-        # ── Notes column (right) ───────────────────────────────────────
+        if project.client_name:
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(inner_x + 8, inner_y + inner_h - 34, project.client_name[:48])
+
+        self._engine.draw_assembly(
+            c=c,
+            assembly=asm,
+            zone_x=inner_x,
+            zone_y=inner_y,
+            zone_w=inner_w,
+            zone_h=inner_h - legend_h - 28,
+            is_mirror=group.is_mirror,
+            shop_sheet_layout=use_shop,
+        )
+
+        c.setFont("Helvetica-Oblique", 6)
+        c.setFillColor(_C_GREY)
+        c.drawString(draw_zone_x, draw_zone_y - 8, "Scale: NTS  |  Dimensions in inch [mm]")
+
+        self._draw_vertical_title_block(
+            c, project, group, asm, version, tenant, package_qty=group.unit_count,
+            sheet_id=version,
+            x=_W - _M - 0.88 * inch,
+            y=body_bot,
+            h=draw_h,
+        )
+
         notes_y = body_top
-        notes_y = self._draw_notes_column(c, asm, notes_y, draw_zone_h)
+        self._draw_notes_column(c, asm, notes_y, draw_zone_h)
 
         self._footer(c, project.name, version, tenant)
 
@@ -522,10 +531,15 @@ class PackagePdfExporter:
 
             c.setFillColor(_C_DARK)
             c.setFont("Helvetica", 7)
-            c.drawString(_NOTE_X + 6, y,
-                         f"  {dims.length}\" × {dims.depth}\""
-                         + (f" × {dims.thickness}\"" if dims.thickness else "")
-                         + f"  =  {area:.2f} sq ft")
+            dim_l = format_dimension_inch_mm(dims.length)
+            dim_d = format_dimension_inch_mm(dims.depth)
+            c.drawString(
+                _NOTE_X + 6,
+                y,
+                f"  {dim_l} × {dim_d}"
+                + (f" × {dims.thickness}\"" if dims.thickness else "")
+                + f"  =  {area:.2f} sq ft",
+            )
             y -= 12
 
             # Tables
@@ -719,6 +733,56 @@ class PackagePdfExporter:
         c.setFillColor(_C_WHITE)
         c.setFont("Helvetica-Bold", 8)
         c.drawString(x + 7, y + 0.04 * inch, text)
+
+    def _draw_vertical_title_block(
+        self,
+        c,
+        project: Project,
+        group: UnitTypeGroup,
+        asm: Assembly,
+        version: str,
+        tenant: Tenant,
+        *,
+        package_qty: int,
+        sheet_id: str,
+        x: float,
+        y: float,
+        h: float,
+    ) -> None:
+        """Virgin-style vertical title strip on the right margin of drawing pages."""
+        w = 0.82 * inch
+        c.setFillColor(HexColor("#f4f6f8"))
+        c.setStrokeColor(HexColor("#999999"))
+        c.setLineWidth(0.75)
+        c.rect(x, y, w, h, fill=1, stroke=1)
+
+        cx = x + w / 2
+        material = project.material or "3CM GRANITE"
+        co = (tenant.company_name or "Virgin Surfaces").upper()[:28]
+
+        c.saveState()
+        c.translate(cx, y + h - 14)
+        c.rotate(90)
+        c.setFillColor(_C_DARK)
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(0, 0, co)
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(0, -12, material[:36])
+        c.drawString(0, -24, (project.client_name or project.name)[:40])
+        c.drawString(0, -36, f"TYPE {group.unit_type_code}  ·  QTY={package_qty}")
+        c.setFont("Helvetica", 6)
+        c.drawString(0, -50, f"Sheet {sheet_id}  ·  Rev {version}")
+        if project.issue_date:
+            c.drawString(0, -62, project.issue_date.strftime("%m/%d/%Y"))
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(0, -78, "ITEM # 16360")
+        c.setFont("Helvetica", 5.5)
+        c.drawString(0, -92, asm.name[:44])
+        c.restoreState()
+
+        c.setFillColor(_C_DARK)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(cx, y + 10, sheet_id[:12])
 
     def _wrap_text(self, text: str, max_chars: int) -> List[str]:
         words = text.split()

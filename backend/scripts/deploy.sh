@@ -37,6 +37,14 @@ if [ -n "$CLOUDSQL_INSTANCE" ]; then
   echo "Linking Cloud SQL Instance: $CLOUDSQL_INSTANCE"
 fi
 
+ENV_FILE="${DEPLOY_ENV_FILE:-$(dirname "$0")/production-env.yaml}"
+if [ -f "$ENV_FILE" ]; then
+  echo "Env file: $ENV_FILE"
+  ENV_ARGS=(--env-vars-file "$ENV_FILE")
+else
+  ENV_ARGS=(--set-env-vars "APP_ENV=production,USE_SQL_REPOSITORY=true,USE_LOCAL_STORAGE=${USE_LOCAL_STORAGE},STORAGE_BUCKET=${STORAGE_BUCKET},GCP_PROJECT_ID=${PROJECT_ID},ALLOWED_ORIGINS=${ALLOWED_ORIGINS}")
+fi
+
 gcloud run deploy "$SERVICE_NAME" \
   --image "$IMAGE_URL" \
   --region "$REGION" \
@@ -44,7 +52,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --platform managed \
   --allow-unauthenticated \
   $CLOUDSQL_ARGS \
-  --set-env-vars "APP_ENV=production,USE_SQL_REPOSITORY=true,USE_LOCAL_STORAGE=${USE_LOCAL_STORAGE},STORAGE_BUCKET=${STORAGE_BUCKET},GCP_PROJECT_ID=${PROJECT_ID},ALLOWED_ORIGINS=${ALLOWED_ORIGINS}" \
+  "${ENV_ARGS[@]}" \
   --set-secrets DATABASE_URL=BUILDDESK_DATABASE_URL:latest,JWT_SECRET_KEY=BUILDDESK_JWT_SECRET:latest \
   --quiet
 

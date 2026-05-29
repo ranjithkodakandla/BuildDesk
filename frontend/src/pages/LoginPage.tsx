@@ -63,9 +63,14 @@ export const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Tenant ID</label>
+              <label htmlFor="login-tenant-id" className="block text-sm font-medium text-slate-300 mb-1.5">
+                Tenant ID
+              </label>
               <input
+                id="login-tenant-id"
+                data-testid="login-tenant-id"
                 type="text"
+                autoComplete="off"
                 value={tenantId}
                 onChange={(e) => setTenantId(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
@@ -73,10 +78,15 @@ export const LoginPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+              <label htmlFor="login-email" className="block text-sm font-medium text-slate-300 mb-1.5">
+                Email
+              </label>
               <input
+                id="login-email"
+                data-testid="login-email"
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
@@ -84,10 +94,15 @@ export const LoginPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+              <label htmlFor="login-password" className="block text-sm font-medium text-slate-300 mb-1.5">
+                Password
+              </label>
               <input
+                id="login-password"
+                data-testid="login-password"
                 type="password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
@@ -97,6 +112,7 @@ export const LoginPage: React.FC = () => {
 
             <button
               type="submit"
+              data-testid="login-submit"
               disabled={loading}
               className="w-full py-2.5 px-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-violet-500/20"
             >
