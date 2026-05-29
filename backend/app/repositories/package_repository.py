@@ -42,6 +42,7 @@ def _package_from_record(r: ProjectPackageRecord, pages: List[PackagePageRecord]
         version=r.version,
         issued_by=r.issued_by,
         issued_date=r.issued_date,
+        revision_notes=r.revision_notes,
         status=ProjectPackageStatus(r.status),
         storage_reference=r.storage_reference,
         generated_at=r.generated_at,
@@ -69,6 +70,7 @@ class PackageRepository:
         r.version = package.version
         r.issued_by = package.issued_by
         r.issued_date = package.issued_date
+        r.revision_notes = package.revision_notes
         r.status = package.status.value
         r.storage_reference = package.storage_reference
         r.generated_at = package.generated_at
@@ -130,6 +132,7 @@ class PackageRepository:
                 package_id=uuid.UUID(r.id), project_id=uuid.UUID(r.project_id),
                 tenant_id=uuid.UUID(r.tenant_id), version=r.version,
                 issued_by=r.issued_by, issued_date=r.issued_date,
+                revision_notes=r.revision_notes,
                 status=ProjectPackageStatus(r.status), storage_reference=r.storage_reference,
                 generated_at=r.generated_at, page_count=r.page_count, pages=[],
             ) for r in records

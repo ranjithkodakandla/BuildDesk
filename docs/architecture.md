@@ -599,6 +599,35 @@ Unlike a generic CAD system, our primitive renderer understands countertop seman
 - **Splashes**: Rendered as shaded bands along the corresponding part edge (Left, Right, Back).
 - **Seams**: Emits dashed indicator lines at part joins.
 
+---
+
+## Issued Package Architecture (Phase 12)
+
+### PDF Composition Rules
+The `PackagePdfExporter` has been elevated from a raw diagnostic tool to a professional document generation engine.
+- **Table of Contents (TOC):** A dedicated `_draw_toc` mechanism calculates and reserves pagination across type sheets and assembly drawings to provide a comprehensive index for large 100+ unit projects.
+- **Shop-Ready Schedules:** The two-column layout dynamically converts JSON models into structured Edge, Cutout, Hole, and Splash schedules.
+- **Drawing Sheet Structure:** Each page acts as an independent "Sheet" featuring a formal Title Block (Project, Type, Assembly, Sheet N of M, Revision ID).
+- **Field & Installer Readiness:** Assembly metadata now automatically displays installation tags (e.g. `ASSEMBLE-ON-SITE`) and location metadata directly on the blueprint to reduce field RFI questions.
+
+### Branding & White-Label Foundation
+The cover page template is designed to easily support white-label configuration hooks in the future (e.g., logo ingestion, company name substitution, and customizable footer notes). Currently, these blocks display standardized `BUILDDESK` metadata, paving the way for multi-tenant customization.
+
+---
+
+## Revision & Artifact Lifecycle (Phase 11)
+
+### Snapshot Isolation
+BuildDesk embraces immutable generation. A generated `ProjectPackage` acts as a historical snapshot.
+- Generating a new package does **not** overwrite the previous one.
+- Each generation creates a new `ProjectPackageRecord` with a distinct `version` (e.g., "1.0", "Rev A") and an optional `revision_notes` tracking user-entered change reasons.
+- The `PackageRepository` orders packages by `created_at DESC` to always provide the "latest" revision for general operations, while preserving access to past artifacts.
+
+### Artifact Lineage
+- PDF files generated asynchronously are written with unique filenames incorporating their version and timestamp (e.g., `package_RevA.pdf`).
+- Old PDF files are intentionally not deleted. This gives coordinators and builders absolute confidence in past historical data matching previously issued field documents.
+- Operational exports (CSV/XLSX schedules) are generated off the *live* data hierarchy. To preserve historical exports, users must either export and save them locally alongside their PDF package, or rely on future phase cloud-bucket artifact archiving.
+
 ### Layout Engine Rules
 - **Coordinate Space**: The drawing engine normalizes the coordinate space. Left-to-right part placement is automatic.
 - **Scale Calculation**: `scale = min(w_scale, h_scale)` clamped between 1 pt/in and 6 pt/in.

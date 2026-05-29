@@ -332,8 +332,39 @@ def run():
     res = client.post(f"/api/v1/projects/{project_id}/exports", json={"export_type": "summary", "format": "csv"}, headers=headers)
     assert res.status_code == 201
 
+    # 10. Revision Workflow
+    print("10. Testing Revision Workflow (Phase 11)...")
+    
+    pkg_res_2 = client.post(f"/api/v1/projects/{project_id}/package/generate", json={
+        "version": "Rev A",
+        "issued_by": "Pilot Script",
+        "revision_notes": "Added ADA units, updated kitchen edge profiles"
+    }, headers=headers)
+    assert pkg_res_2.status_code == 200
+    
+    print("   Polling for Rev A completion...", end="", flush=True)
+    for _ in range(30):
+        status_res = client.get(f"/api/v1/projects/{project_id}/package/status", headers=headers)
+        if status_res.json()["status"] == "ready":
+            print(" Done!")
+            break
+        elif status_res.json()["status"] == "generation_failed":
+            print(" Failed!")
+            sys.exit(1)
+        print(".", end="", flush=True)
+        time.sleep(1)
+        
+    list_res = client.get(f"/api/v1/projects/{project_id}/packages", headers=headers)
+    assert list_res.status_code == 200
+    packages = list_res.json()["packages"]
+    assert len(packages) == 2
+    print([p["version"] for p in packages])
+    assert packages[0]["version"] == "Rev A"
+    assert packages[1]["version"] == "Rev 1 - Pilot"
+
     print(f"✅ Pilot validation workflow completed successfully. PDF saved to {pdf_out_path}.")
     print("✅ Exports generated successfully in background.")
+    print("✅ Revision workflow preserved history correctly.")
 
 if __name__ == "__main__":
     run()

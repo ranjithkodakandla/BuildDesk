@@ -20,8 +20,9 @@ from app.models.project_package import PackagePageType, ProjectPackageStatus
 # ---------------------------------------------------------------------------
 
 class PackageGenerateRequest(BaseModel):
-    version:   str          = Field(default="1.0",  max_length=50)
-    issued_by: Optional[str] = Field(default=None,  max_length=200)
+    version:           str          = Field(default="1.0",  max_length=50)
+    issued_by:         Optional[str] = Field(default=None,  max_length=200)
+    revision_notes:    Optional[str] = Field(default=None)
 
 
 # ---------------------------------------------------------------------------
@@ -45,6 +46,7 @@ class PackageResponse(BaseModel):
     version:           str
     issued_by:         Optional[str]
     issued_date:       Optional[datetime]
+    revision_notes:    Optional[str]
     status:            ProjectPackageStatus
     storage_reference: Optional[str]
     generated_at:      Optional[datetime]

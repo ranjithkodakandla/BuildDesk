@@ -267,6 +267,24 @@ Corrected roadmap:
 - **Frontend Center:** Added an `ExportModal` to the Project Workspace to trigger, track, and download exports.
 - **Pilot Revalidation:** Augmented `run_pilot_workflow.py` to trigger the three exports concurrently upon generation.
 
+### Phase 11: Revision & Regeneration Workflow (✅ Complete)
+**Goal:** Support real project revisions and package regeneration workflows natively inside BuildDesk.
+- **Revision Domain Foundation:** Added `revision_notes` to `ProjectPackage` and database models, ensuring revisions are properly stored and retrievable.
+- **Package Regeneration Workflow:** Modified the core generation loop to accept version strings and revision notes without overwriting previous packages. The artifact system automatically handles versioned file lineage.
+- **Revision UI:** Upgraded `PackagesPanel.tsx` to list the full revision history of a project. Users can view statuses, generation dates, and revision notes.
+- **Historical Packages:** Users can now click to download specific historical packages natively from the project workspace.
+- **Pilot Revalidation:** Extended `run_pilot_workflow.py` to trigger a package update ("Rev A") to validate history preservation functionality.
+
+### Phase 12: Issued Package Quality & PDF Overhaul (✅ Complete)
+**Goal:** Elevate BuildDesk PDFs from "generated reports" into formally issued professional project packages.
+- **Package Cover Sheet:** Overhauled the cover sheet to include project metadata (Client, Material, Address, Issue Date, Revision, Issued By), status, and revision notes. Added a placeholder for logos and standard fabrication notes.
+- **Table of Contents (TOC):** Implemented a formal, auto-generated Table of Contents mapping type sheets and assembly pages to page numbers for large printouts.
+- **Drawing Sheet Upgrades:** Refactored the `PackagePdfExporter` to display a robust Title Block on each page.
+- **Shop-Ready Schedules:** Transformed the dense text notes column into structured Edge, Cutout, Hole, and Splash schedules.
+- **Field Readiness:** Added an explicit "Field / Installer Readiness" metadata block mapping unit locations and installation notes directly on the fabrication drawing page.
+- **Revision Visibility:** Integrated the `ProjectPackage` entity deeply into the rendering pipeline so that the exact revision strings and notes appear natively on the cover page, title blocks, and TOC headers.
+- **Stress Validation:** Successfully ran the 150-unit `run_pilot_workflow.py` validating that dense pagination and schedule rendering perform reliably without overflow or truncation.
+
 Deferred:
   □ Complex BI Dashboards
   □ StoneDesk integration

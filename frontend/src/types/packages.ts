@@ -23,6 +23,7 @@ export interface ProjectPackage {
   version: string;
   issued_by?: string;
   issued_date?: string;
+  revision_notes?: string;
   status: ProjectPackageStatus;
   generated_at?: string;
   page_count: number;
@@ -31,4 +32,5 @@ export interface ProjectPackage {
 export interface GeneratePackageRequest {
   version: string;
   issued_by?: string;
+  revision_notes?: string;
 }

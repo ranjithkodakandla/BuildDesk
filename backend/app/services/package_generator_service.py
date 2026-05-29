@@ -67,6 +67,7 @@ class PackageGeneratorService:
         project_id: uuid.UUID,
         version: str = "1.0",
         issued_by: Optional[str] = None,
+        revision_notes: Optional[str] = None,
     ) -> ProjectPackage:
         """
         Full generation pipeline. Returns the saved ProjectPackage.
@@ -109,6 +110,7 @@ class PackageGeneratorService:
             version=version,
             issued_by=issued_by,
             issued_date=_utcnow(),
+            revision_notes=revision_notes,
             status=ProjectPackageStatus.READY,
             generated_at=_utcnow(),
             page_count=len(pages),

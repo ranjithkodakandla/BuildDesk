@@ -102,6 +102,7 @@ class ProjectPackage(BaseDomainModel):
     version:           str                      = Field(default="1.0", max_length=50)
     issued_by:         Optional[str]            = Field(default=None, max_length=200)
     issued_date:       Optional[datetime]       = Field(default=None)
+    revision_notes:    Optional[str]            = Field(default=None)
     status:            ProjectPackageStatus     = Field(default=ProjectPackageStatus.DRAFT)
     # Reserved for Phase 6 GCS upload (gs://... blob path or signed URL)
     storage_reference: Optional[str]            = Field(default=None, max_length=1000)

@@ -36,13 +36,15 @@ def generate_pdf_background(
         storage_svc = CloudStorageService()
 
         # Update status to generating
-        db_package = pkg_repo._get_record(tenant_id, package_id)
+        db_package = pkg_repo.get_package(tenant_id, package_id)
         if not db_package:
             logger.error(f"Package {package_id} not found in DB.")
             return
 
-        db_package.status = ProjectPackageStatus.GENERATING.value
-        db.commit()
+        db_record = pkg_repo._get_record(tenant_id, package_id)
+        if db_record:
+            db_record.status = ProjectPackageStatus.GENERATING.value
+            db.commit()
 
         # 1. Load project
         project = hierarchy_repo.get_project(tenant_id, project_id)
@@ -67,21 +69,22 @@ def generate_pdf_background(
         exporter = PackagePdfExporter()
         pdf_bytes = exporter.export(
             project=project,
+            package=db_package,
             unit_type_groups=groups,
             assemblies_by_type=assemblies_by_type,
             summary=summary,
-            version=db_package.version,
         )
 
         # 4. Upload to Cloud Storage
         storage_ref = storage_svc.upload_pdf(project_id, package_id, pdf_bytes)
 
         # 5. Update Package Record
-        db_package.status = ProjectPackageStatus.READY.value
-        db_package.storage_reference = storage_ref
-        db_package.file_size_bytes = len(pdf_bytes)
-        db_package.generated_at = datetime.now(timezone.utc)
-        db.commit()
+        if db_record:
+            db_record.status = ProjectPackageStatus.READY.value
+            db_record.storage_reference = storage_ref
+            db_record.file_size_bytes = len(pdf_bytes)
+            db_record.generated_at = datetime.now(timezone.utc)
+            db.commit()
         logger.info(f"Successfully generated package {package_id}")
 
     except Exception as e:

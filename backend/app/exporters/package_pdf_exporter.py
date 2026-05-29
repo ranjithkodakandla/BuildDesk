@@ -33,7 +33,7 @@ from reportlab.pdfgen import canvas
 from app.exporters.fabrication_drawing_engine import FabricationDrawingEngine
 from app.models.fabrication import Assembly, Part
 from app.models.hierarchy import Project
-from app.models.project_package import PackageSummary, UnitTypeGroup
+from app.models.project_package import PackageSummary, UnitTypeGroup, ProjectPackage
 
 # ── Palette ──────────────────────────────────────────────────────────────────
 _C_DARK   = HexColor("#1a2332")
@@ -84,10 +84,10 @@ class PackagePdfExporter:
         unit_type_groups: List[UnitTypeGroup],
         assemblies_by_type: Dict[str, List[Assembly]],
         summary: PackageSummary,
-        version: str = "1.0",
+        package: ProjectPackage,
     ) -> bytes:
-        # Pre-compute total pages: 1 cover + per group (1 type + N asm) + 1 summary
-        tp = 1
+        # Pre-compute total pages: 1 cover + 1 TOC + per group (1 type + N asm) + 1 summary
+        tp = 2
         for g in unit_type_groups:
             tp += 1 + len(g.assembly_types)
         tp += 1
@@ -96,9 +96,30 @@ class PackagePdfExporter:
 
         buf = io.BytesIO()
         c = canvas.Canvas(buf, pagesize=_PAGE)
-        c.setTitle(f"BuildDesk — {project.name} — {version}")
+        c.setTitle(f"BuildDesk — {project.name} — {package.version}")
 
-        self._draw_cover(c, project, version, summary)
+        # Gather TOC items
+        toc_items = []
+
+        self._draw_cover(c, project, package, summary)
+        c.showPage()
+        
+        toc_items.append(("Cover Sheet", 1))
+        toc_items.append(("Table of Contents", 2))
+        
+        # We will draw TOC later, but we must reserve a page.
+        # Actually, if we draw it now, we need to know the page numbers in advance.
+        # Let's pre-calculate the page numbers for the TOC.
+        current_page = 3
+        for group in unit_type_groups:
+            toc_items.append((f"Unit Type {group.unit_type_code} - Summary", current_page))
+            current_page += 1
+            for atype in group.assembly_types:
+                toc_items.append((f"  {group.unit_type_code} - {atype.title()}", current_page))
+                current_page += 1
+        toc_items.append(("Project Summary", current_page))
+        
+        self._draw_toc(c, project, package.version, toc_items)
         c.showPage()
 
         for group in unit_type_groups:
@@ -114,10 +135,10 @@ class PackagePdfExporter:
             for atype in group.assembly_types:
                 key = f"{group.unit_type_id}::{atype}"
                 asms = assemblies_by_type.get(key, [])
-                self._draw_assembly_page(c, project, group, atype, asms, version)
+                self._draw_assembly_page(c, project, group, atype, asms, package.version)
                 c.showPage()
 
-        self._draw_summary(c, project, summary, version)
+        self._draw_summary(c, project, summary, package.version)
         c.showPage()
 
         c.save()
@@ -125,7 +146,7 @@ class PackagePdfExporter:
 
     # ── Cover ─────────────────────────────────────────────────────────────────
 
-    def _draw_cover(self, c, project: Project, version: str, summary: PackageSummary):
+    def _draw_cover(self, c, project: Project, package: ProjectPackage, summary: PackageSummary):
         self._page_num += 1
         # Dark header band
         c.setFillColor(_C_DARK)
@@ -141,27 +162,30 @@ class PackagePdfExporter:
 
         # Version + sheet count badges (top-right)
         bx = _W - 1.55 * inch
-        self._badge(c, bx, _H - 0.7 * inch, version, _C_MID)
+        self._badge(c, bx, _H - 0.7 * inch, package.version, _C_MID)
         self._badge(c, bx, _H - 1.0 * inch,
                     f"{self._total_pages} Sheets", HexColor("#2c3e50"))
 
         # Metadata table (left column)
         meta = [
+            ("Project",     project.name),
             ("Client",      project.client_name or "—"),
             ("Material",    project.material    or "—"),
             ("Address",     project.address     or "—"),
-            ("Issue Date",  project.issue_date.strftime("%B %d, %Y")
-                            if project.issue_date else "—"),
+            ("Issue Date",  project.issue_date.strftime("%B %d, %Y") if project.issue_date else package.generated_at.strftime("%B %d, %Y") if package.generated_at else "—"),
             ("Status",      project.status.value.replace("_", " ").title()),
-            ("Prepared By", getattr(project, "issued_by", None) or "—"),
+            ("Prepared By", getattr(package, "issued_by", None) or "—"),
         ]
+        if package.revision_notes:
+            meta.append(("Rev Notes", package.revision_notes))
+            
         y = _H - 2.45 * inch
         for label, value in meta:
             c.setFont("Helvetica-Bold", 9)
             c.setFillColor(_C_DARK)
             c.drawString(_M, y, f"{label}:")
             c.setFont("Helvetica", 9)
-            c.drawString(_M + 1.05 * inch, y, str(value)[:70])
+            c.drawString(_M + 1.05 * inch, y, str(value)[:100])
             y -= 0.27 * inch
 
         # Stats band
@@ -187,6 +211,74 @@ class PackagePdfExporter:
             c.setFillColor(_C_GREY)
             c.drawCentredString(cx, y - bh * 0.78, lbl)
 
+        # Standard fabrication notes
+        notes_y = y - bh - 0.5 * inch
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(_C_DARK)
+        c.drawString(_M, notes_y, "STANDARD FABRICATION & INSTALLATION NOTES:")
+        c.setFont("Helvetica", 8)
+        c.setFillColor(_C_GREY)
+        std_notes = [
+            "1. Field verify all dimensions prior to fabrication.",
+            "2. Ensure all substrate surfaces are level and capable of supporting countertop weight.",
+            "3. Seam locations shown are suggested; actual locations to be determined by fabricator based on slab sizes.",
+            "4. All exposed edges to be polished unless otherwise noted.",
+            "5. Sink/cooktop cutouts must be verified against actual appliance/fixture templates.",
+            "6. Support brackets required for overhangs exceeding 10 inches."
+        ]
+        ny = notes_y - 0.25 * inch
+        for note in std_notes:
+            c.drawString(_M + 0.1 * inch, ny, note)
+            ny -= 0.2 * inch
+
+        self._footer(c, project.name, package.version)
+
+        self._footer(c, project.name, package.version)
+
+    # ── Table of Contents ─────────────────────────────────────────────────────
+
+    def _draw_toc(self, c, project: Project, version: str, items: List[tuple[str, int]]):
+        self._page_num += 1
+        
+        # Header
+        c.setFillColor(_C_DARK)
+        c.rect(0, _H - 1.2 * inch, _W, 1.2 * inch, fill=1, stroke=0)
+        c.setFillColor(_C_WHITE)
+        c.setFont("Helvetica-Bold", 20)
+        c.drawString(_M, _H - 0.75 * inch, "TABLE OF CONTENTS")
+        
+        # Items
+        y = _H - 1.6 * inch
+        c.setFillColor(_C_DARK)
+        
+        for idx, (label, pnum) in enumerate(items):
+            if y < _M + 0.5 * inch:
+                c.showPage()
+                y = _H - 1.0 * inch
+                
+            is_main = not label.startswith("  ")
+            
+            if is_main and idx > 0:
+                y -= 0.1 * inch # Extra spacing for main sections
+                
+            c.setFont("Helvetica-Bold" if is_main else "Helvetica", 10 if is_main else 9)
+            c.drawString(_M + (0 if is_main else 0.3 * inch), y, label)
+            
+            # Dots
+            dot_start = _M + c.stringWidth(label, "Helvetica-Bold" if is_main else "Helvetica", 10 if is_main else 9) + 10 + (0 if is_main else 0.3 * inch)
+            dot_end = _W - _M - 0.5 * inch
+            c.setStrokeColor(_C_GREY)
+            c.setLineWidth(0.5)
+            c.setDash(2, 4)
+            c.line(dot_start, y + 3, dot_end, y + 3)
+            c.setDash()
+            
+            # Page Number
+            c.setFont("Helvetica", 10)
+            c.drawRightString(_W - _M, y, str(pnum))
+            
+            y -= 0.25 * inch
+            
         self._footer(c, project.name, version)
 
     # ── Type Sheet ────────────────────────────────────────────────────────────
@@ -376,6 +468,17 @@ class PackagePdfExporter:
                      f"Type: {asm.assembly_type.value.title()}  |  "
                      f"Variant: {asm.variant.value.upper()}")
         y -= 0.22 * inch
+        
+        c.setFont("Helvetica-Bold", 8)
+        c.setFillColor(_C_DARK)
+        c.drawString(_NOTE_X + 5, y, "FIELD / INSTALLER READINESS")
+        y -= 0.17 * inch
+        c.setFont("Helvetica", 7)
+        c.setFillColor(_C_GREY)
+        c.drawString(_NOTE_X + 5, y, "Tag: ASSEMBLE-ON-SITE")
+        y -= 0.17 * inch
+        c.drawString(_NOTE_X + 5, y, "Loc: Coordinate with Site Super")
+        y -= 0.22 * inch
 
         # Per-part details
         for i, part in enumerate(asm.parts):
@@ -402,39 +505,56 @@ class PackagePdfExporter:
                          + f"  =  {area:.2f} sq ft")
             y -= 12
 
-            # Edges
+            # Tables
             if part.edges:
+                c.setFont("Helvetica-Bold", 6.5)
+                c.setFillColor(_C_DARK)
+                c.drawString(_NOTE_X + 8, y, "EDGE SCHEDULE:")
+                y -= 9
                 for e in part.edges:
                     etype = e.edge_type.value.replace("_", " ").title()
                     epos  = e.position.value.upper()
-                    c.drawString(_NOTE_X + 8, y, f"  Edge {epos}: {etype}")
-                    y -= 11
+                    c.setFont("Helvetica", 6.5)
+                    c.drawString(_NOTE_X + 12, y, f"· {epos}: {etype}")
+                    y -= 9
 
-            # Cutouts
-            for co in part.cutouts:
-                ctype = co.cutout_type.value.replace("_", " ").title()
-                mount = co.mount_type.value.replace("_", " ").title()
-                c.drawString(_NOTE_X + 8, y,
-                             f"  ✂ {ctype} ({mount}): "
-                             f"{co.dimensions.length}\"×{co.dimensions.depth}\"")
-                y -= 11
+            if part.cutouts:
+                c.setFont("Helvetica-Bold", 6.5)
+                c.setFillColor(_C_DARK)
+                c.drawString(_NOTE_X + 8, y, "CUTOUT SCHEDULE:")
+                y -= 9
+                for co in part.cutouts:
+                    ctype = co.cutout_type.value.replace("_", " ").title()
+                    mount = co.mount_type.value.replace("_", " ").title()
+                    c.setFont("Helvetica", 6.5)
+                    c.drawString(_NOTE_X + 12, y, f"· {ctype} ({mount}) — {co.dimensions.length}\"×{co.dimensions.depth}\" @ X:{co.center_x}\", Y:{co.center_y}\"")
+                    y -= 9
 
-            # Holes
-            for h in part.holes:
-                c.drawString(_NOTE_X + 8, y,
-                             f"  ○ {h.purpose}: Ø{h.diameter}\" @ ({h.center_x}\", {h.center_y}\")")
-                y -= 11
+            if part.holes:
+                c.setFont("Helvetica-Bold", 6.5)
+                c.setFillColor(_C_DARK)
+                c.drawString(_NOTE_X + 8, y, "HOLE SCHEDULE:")
+                y -= 9
+                for h in part.holes:
+                    c.setFont("Helvetica", 6.5)
+                    c.drawString(_NOTE_X + 12, y, f"· {h.purpose}: Ø{h.diameter}\" @ X:{h.center_x}\", Y:{h.center_y}\"")
+                    y -= 9
 
-            # Splashes
-            for sp in part.splashes:
-                st = sp.splash_type.value.replace("_", " ").title()
-                c.drawString(_NOTE_X + 8, y,
-                             f"  ▬ {st}: {sp.dimensions.length}\"×{sp.dimensions.depth}\"")
-                y -= 11
+            if part.splashes:
+                c.setFont("Helvetica-Bold", 6.5)
+                c.setFillColor(_C_DARK)
+                c.drawString(_NOTE_X + 8, y, "SPLASH SCHEDULE:")
+                y -= 9
+                for sp in part.splashes:
+                    st = sp.splash_type.value.replace("_", " ").title()
+                    c.setFont("Helvetica", 6.5)
+                    c.drawString(_NOTE_X + 12, y, f"· {st} — {sp.dimensions.length}\"×{sp.dimensions.depth}\"")
+                    y -= 9
 
             if part.notes:
                 c.setFillColor(_C_RED)
-                c.drawString(_NOTE_X + 8, y, f"  Note: {part.notes[:50]}")
+                c.setFont("Helvetica-Bold", 6.5)
+                c.drawString(_NOTE_X + 8, y, f"Note: {part.notes[:70]}")
                 c.setFillColor(_C_DARK)
                 y -= 11
             y -= 5

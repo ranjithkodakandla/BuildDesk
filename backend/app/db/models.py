@@ -341,6 +341,7 @@ class ProjectPackageRecord(Base):
     version: Mapped[str] = mapped_column(String(50), nullable=False, default="1.0")
     issued_by: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, default=None)
     issued_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    revision_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
     # draft | generating | ready | generation_failed | archived
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="draft")
     # Reserved for Phase 6 GCS upload
