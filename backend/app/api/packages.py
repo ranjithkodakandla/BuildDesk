@@ -72,6 +72,9 @@ def _map_package(pkg) -> PackageResponse:
         status=pkg.status,
         storage_reference=pkg.storage_reference,
         generated_at=pkg.generated_at,
+        approved_by=pkg.approved_by,
+        approved_at=pkg.approved_at,
+        review_notes=pkg.review_notes,
         page_count=pkg.page_count,
         pages=[
             PackagePageResponse(
@@ -91,7 +94,7 @@ def _map_package(pkg) -> PackageResponse:
 
 from fastapi import APIRouter, Depends, HTTPException, Response, BackgroundTasks
 from fastapi.responses import FileResponse
-from app.api.package_schemas import PackageGenerateRequest, PackageResponse, PackageListResponse
+from app.api.package_schemas import PackageGenerateRequest, PackageResponse, PackageListResponse, PackageTransitionRequest
 from app.exporters.assembly_svg_exporter import AssemblySvgExporter
 from app.tasks.package_generation import generate_pdf_background
 
@@ -142,6 +145,41 @@ def get_package_status(
     package = svc.get_latest_for_project(tenant_id, project_id)
     if not package:
         raise HTTPException(status_code=404, detail="No package found for this project.")
+    return _map_package(package)
+
+
+@router.post("/projects/{project_id}/packages/{package_id}/transition", response_model=PackageResponse)
+def transition_package_status(
+    project_id: uuid.UUID,
+    package_id: uuid.UUID,
+    body: PackageTransitionRequest,
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
+    user: User = Depends(require_active_user),
+    package_repo: PackageRepository = Depends(get_package_repo),
+    db: Session = Depends(get_db),
+):
+    """
+    Transition a package status (e.g. submit, approve, reject).
+    Records approval metadata if transitioning to APPROVED or REJECTED.
+    """
+    package = package_repo.get_package(tenant_id, package_id)
+    if not package or str(package.project_id) != str(project_id):
+        raise HTTPException(status_code=404, detail="Package not found.")
+        
+    from app.models.project_package import ProjectPackageStatus
+    from datetime import datetime
+
+    package.status = body.status
+    if body.review_notes:
+        package.review_notes = body.review_notes
+        
+    if body.status in (ProjectPackageStatus.APPROVED, ProjectPackageStatus.REJECTED):
+        package.approved_by = user.email
+        package.approved_at = datetime.utcnow()
+        
+    package_repo.save_package(package)
+    db.commit()
+    
     return _map_package(package)
 
 

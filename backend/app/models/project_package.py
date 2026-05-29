@@ -43,6 +43,12 @@ class ProjectPackageStatus(str, Enum):
     GENERATING        = "generating"
     READY             = "ready"
     GENERATION_FAILED = "generation_failed"
+    SUBMITTED         = "submitted"
+    UNDER_REVIEW      = "under_review"
+    APPROVED          = "approved"
+    REJECTED          = "rejected"
+    SUPERSEDED        = "superseded"
+    ISSUED            = "issued"
     ARCHIVED          = "archived"
 
 
@@ -108,6 +114,12 @@ class ProjectPackage(BaseDomainModel):
     storage_reference: Optional[str]            = Field(default=None, max_length=1000)
     file_size_bytes:   Optional[int]            = Field(default=None)
     generated_at:      Optional[datetime]       = Field(default=None)
+    
+    # Approval workflow
+    approved_by:       Optional[str]            = Field(default=None, max_length=200)
+    approved_at:       Optional[datetime]       = Field(default=None)
+    review_notes:      Optional[str]            = Field(default=None)
+    
     page_count:        int                      = Field(default=0)
     pages:             List[PackagePage]        = Field(default_factory=list)
 

@@ -348,6 +348,12 @@ class ProjectPackageRecord(Base):
     storage_reference: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True, default=None)
     file_size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
     generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    
+    # Approval Workflow (Phase 13)
+    approved_by: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, default=None)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
+    
     page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
@@ -421,4 +427,32 @@ class ExportJobRecord(Base):
     error_log: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+# ---------------------------------------------------------------------------
+# RFIs (Phase 13)
+# ---------------------------------------------------------------------------
+
+class RFIRecord(Base):
+    __tablename__ = "rfis"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
+    
+    package_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    assembly_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    part_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="open")
+    
+    created_by: Mapped[str] = mapped_column(String(200), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    answered_by: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    answered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

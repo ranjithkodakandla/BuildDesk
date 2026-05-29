@@ -8,8 +8,8 @@
 
 | Field              | Value                                  |
 |--------------------|----------------------------------------|
-| Last completed phase | Phase 12 — Issued Package Quality & PDF Overhaul |
-| Git branch         | `feat/phase-12-pdf-overhaul` |
+| Last completed phase | Phase 13 — Operational Coordination Layer |
+| Git branch         | `feat/phase-13-operational-coordination` |
 | Test baseline      | Passing backend, frontend compiled |
 | Migration state    | Up to date |
 
@@ -17,25 +17,24 @@
 
 ## Immediate Next Milestone
 
-**Phase 13 — Field Coordination & Operational Refinement**
+**Phase 14 — Configurable Tenant Profiles & Advanced Search**
 
-The system is ready to proceed to Phase 13.
+The system is ready to proceed to Phase 14.
 
-### Next Execution Target: Phase 13 — Field Coordination
+### Next Execution Target: Phase 14 — Configurable Tenant Profiles
 
-With professional shop drawings now successfully generating for 150+ unit projects, the final gap is managing the operational nuances between fabrication and field installation.
+With the operational layer now successfully implemented (approval workflows, RFIs), the platform is nearly ready for initial launch. The final missing piece is allowing organizations to customize their workspace.
 
-**Key Objectives for Phase 13:**
-1. **Approval Workflows:** Move the package status beyond `READY` by supporting `SUBMITTED`, `REJECTED`, and `APPROVED` state transitions.
-2. **Field Notes & RFIs:** Allow field superintendents and fabricators to capture notes or Requests for Information (RFIs) directly against specific Units or Assemblies.
-3. **Advanced Export Filtering:** Allow exporting subsets of data (e.g., "Schedule for Building 1 only" or "Fabrication list for ADA units only").
-4. **Tenant Configuration:** Begin extracting hardcoded SaaS variables (like branding, color themes, or default standard notes) into a configurable tenant profile.
+**Key Objectives for Phase 14:**
+1. **Tenant Configuration:** Extract hardcoded SaaS variables (like branding logos, company name, default PDF footers, and standard fabrication notes) into a configurable `TenantProfile`.
+2. **Advanced Search Filters:** Implement robust filtering for the project dashboard (e.g. filter by operational status, client, or issue date).
+3. **Operational Dashboards:** Provide a high-level view of pending RFIs and packages awaiting approval.
 
 **Required Verification:**
-- Perform a complete lifecycle flow from package generation to approval.
+- Validate that a generated PDF automatically adopts the custom branding settings defined by the tenant.
 
 ---
 
 ## Pending Blockers
 
-- None currently blocking Phase 13.
+- None currently blocking Phase 14.

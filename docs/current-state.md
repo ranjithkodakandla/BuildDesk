@@ -285,6 +285,14 @@ Corrected roadmap:
 - **Revision Visibility:** Integrated the `ProjectPackage` entity deeply into the rendering pipeline so that the exact revision strings and notes appear natively on the cover page, title blocks, and TOC headers.
 - **Stress Validation:** Successfully ran the 150-unit `run_pilot_workflow.py` validating that dense pagination and schedule rendering perform reliably without overflow or truncation.
 
+### Phase 13: Operational Coordination Layer (✅ Complete)
+**Goal:** Move BuildDesk from issued-package generation toward operational lifecycle management (review, approval, field coordination).
+- **Package Lifecycle Status Model:** Expanded `ProjectPackageStatus` to support operational states: `SUBMITTED`, `UNDER_REVIEW`, `APPROVED`, `REJECTED`, `SUPERSEDED`, and `ISSUED`.
+- **Approval Workflow:** Implemented `POST /packages/{id}/transition` API to allow workflow transitions, capturing `approved_by`, `approved_at`, and `review_notes`.
+- **RFI Foundation:** Added `RFIRecord` and domain models to track Requests for Information linked to specific projects, packages, assemblies, and parts. Built API routes to create and answer RFIs.
+- **PDF Visibility:** Modified the PDF Exporter Cover Sheet to dynamically output Project Status, Package Status, Approved By, and Approved At to ensure physical blueprints reflect the latest operational truths.
+- **Pilot Revalidation:** Extended `run_pilot_workflow.py` to seamlessly simulate generating a package, submitting it, rejecting it for clarification, raising an RFI, answering the RFI, regenerating the package, and finally approving the revision.
+
 Deferred:
   □ Complex BI Dashboards
   □ StoneDesk integration

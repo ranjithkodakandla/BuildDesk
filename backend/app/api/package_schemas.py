@@ -24,6 +24,10 @@ class PackageGenerateRequest(BaseModel):
     issued_by:         Optional[str] = Field(default=None,  max_length=200)
     revision_notes:    Optional[str] = Field(default=None)
 
+class PackageTransitionRequest(BaseModel):
+    status:            ProjectPackageStatus = Field(...)
+    review_notes:      Optional[str] = Field(default=None)
+
 
 # ---------------------------------------------------------------------------
 # Response schemas
@@ -50,6 +54,11 @@ class PackageResponse(BaseModel):
     status:            ProjectPackageStatus
     storage_reference: Optional[str]
     generated_at:      Optional[datetime]
+    
+    approved_by:       Optional[str]
+    approved_at:       Optional[datetime]
+    review_notes:      Optional[str]
+    
     page_count:        int
     pages:             List[PackagePageResponse]
 

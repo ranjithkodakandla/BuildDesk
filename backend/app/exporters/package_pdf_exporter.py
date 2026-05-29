@@ -173,11 +173,17 @@ class PackagePdfExporter:
             ("Material",    project.material    or "—"),
             ("Address",     project.address     or "—"),
             ("Issue Date",  project.issue_date.strftime("%B %d, %Y") if project.issue_date else package.generated_at.strftime("%B %d, %Y") if package.generated_at else "—"),
-            ("Status",      project.status.value.replace("_", " ").title()),
+            ("Proj Status", project.status.value.replace("_", " ").title()),
+            ("Pkg Status",  package.status.value.replace("_", " ").upper()),
             ("Prepared By", getattr(package, "issued_by", None) or "—"),
         ]
         if package.revision_notes:
             meta.append(("Rev Notes", package.revision_notes))
+            
+        if getattr(package, "approved_by", None):
+            meta.append(("Approved By", package.approved_by))
+            if getattr(package, "approved_at", None):
+                meta.append(("Approved At", package.approved_at.strftime("%B %d, %Y")))
             
         y = _H - 2.45 * inch
         for label, value in meta:

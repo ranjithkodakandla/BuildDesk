@@ -362,9 +362,81 @@ def run():
     assert packages[0]["version"] == "Rev A"
     assert packages[1]["version"] == "Rev 1 - Pilot"
 
+    # 11. Operational Coordination Workflow (Phase 13)
+    print("11. Testing Operational Workflow (Phase 13)...")
+    
+    # Get the latest package (Rev A)
+    pkg_a_id = packages[0]["package_id"]
+    
+    # Submit package
+    print("   Submitting Rev A...")
+    res = client.post(f"/api/v1/projects/{project_id}/packages/{pkg_a_id}/transition", json={
+        "status": "submitted"
+    }, headers=headers)
+    assert res.status_code == 200
+    
+    # Reject package
+    print("   Rejecting Rev A...")
+    res = client.post(f"/api/v1/projects/{project_id}/packages/{pkg_a_id}/transition", json={
+        "status": "rejected",
+        "review_notes": "Sink cutout clarify needed for Kitchen island"
+    }, headers=headers)
+    assert res.status_code == 200
+    
+    # Create RFI
+    print("   Creating RFI...")
+    rfi_res = client.post(f"/api/v1/projects/{project_id}/rfis", json={
+        "title": "Kitchen Island Sink Clarification",
+        "question": "Does the Type A island receive a drop-in or undermount sink?",
+        "package_id": pkg_a_id
+    }, headers=headers)
+    assert rfi_res.status_code == 200
+    rfi_id = rfi_res.json()["rfi_id"]
+    
+    # Answer RFI
+    print("   Answering RFI...")
+    ans_res = client.post(f"/api/v1/rfis/{rfi_id}/answer", json={
+        "answer": "Undermount. DXF template attached in email.",
+        "status": "answered"
+    }, headers=headers)
+    assert ans_res.status_code == 200
+    
+    # Generate Rev B
+    print("   Generating Rev B...")
+    pkg_res_3 = client.post(f"/api/v1/projects/{project_id}/package/generate", json={
+        "version": "Rev B",
+        "issued_by": "Pilot Script",
+        "revision_notes": "Addressed RFI-1, updated sink cutouts"
+    }, headers=headers)
+    assert pkg_res_3.status_code == 200
+    
+    print("   Polling for Rev B completion...", end="", flush=True)
+    for _ in range(30):
+        status_res = client.get(f"/api/v1/projects/{project_id}/package/status", headers=headers)
+        if status_res.json()["status"] == "ready":
+            print(" Done!")
+            break
+        elif status_res.json()["status"] == "generation_failed":
+            print(" Failed!")
+            sys.exit(1)
+        print(".", end="", flush=True)
+        time.sleep(1)
+        
+    # Approve Rev B
+    list_res = client.get(f"/api/v1/projects/{project_id}/packages", headers=headers)
+    pkg_b_id = list_res.json()["packages"][0]["package_id"]
+    
+    print("   Approving Rev B...")
+    app_res = client.post(f"/api/v1/projects/{project_id}/packages/{pkg_b_id}/transition", json={
+        "status": "approved",
+        "review_notes": "Good for fabrication"
+    }, headers=headers)
+    assert app_res.status_code == 200
+    assert app_res.json()["approved_by"] is not None
+
     print(f"✅ Pilot validation workflow completed successfully. PDF saved to {pdf_out_path}.")
     print("✅ Exports generated successfully in background.")
-    print("✅ Revision workflow preserved history correctly.")
+    print("✅ Revision & Operational workflow tested.")
 
 if __name__ == "__main__":
     run()

@@ -615,6 +615,29 @@ The cover page template is designed to easily support white-label configuration 
 
 ---
 
+## Operational Coordination Architecture (Phase 13)
+
+### Package Status Rules
+The `ProjectPackageStatus` enum has been expanded to support a complete document lifecycle:
+- **`DRAFT` / `GENERATING` / `READY`**: Automated states during PDF compilation.
+- **`SUBMITTED`**: Package has been sent to the reviewer/client.
+- **`UNDER_REVIEW`**: Package is currently being evaluated.
+- **`APPROVED`**: Package is formally approved for fabrication. (Records `approved_by` and `approved_at`).
+- **`REJECTED`**: Package has corrections required.
+- **`SUPERSEDED`**: Package is outdated by a newer revision.
+- **`ISSUED`**: Package has been formally pushed to the shop floor.
+
+### Approval Workflow
+The `POST /projects/{id}/packages/{pkg_id}/transition` API drives the state machine. Transitions to terminal states (APPROVED/REJECTED) automatically capture metadata (`approved_by`, `review_notes`) without requiring a heavyweight BPM engine. This keeps the UX fast and frictionless.
+
+### RFI Lifecycle
+The `RFI` (Request for Information) model (`backend/app/models/rfi.py`) bridges the gap between field questions and backend data:
+- **Relational Integrity:** RFIs can be optionally linked to specific packages, assemblies, or parts.
+- **State Machine:** Transitions from `OPEN` to `ANSWERED` when a coordinator supplies clarification.
+- **Tenant Isolation:** Fully scoped to `tenant_id` to prevent cross-company data leakage.
+
+---
+
 ## Revision & Artifact Lifecycle (Phase 11)
 
 ### Snapshot Isolation

@@ -46,6 +46,9 @@ def _package_from_record(r: ProjectPackageRecord, pages: List[PackagePageRecord]
         status=ProjectPackageStatus(r.status),
         storage_reference=r.storage_reference,
         generated_at=r.generated_at,
+        approved_by=r.approved_by,
+        approved_at=r.approved_at,
+        review_notes=r.review_notes,
         page_count=r.page_count,
         pages=[_page_from_record(p) for p in sorted(pages, key=lambda x: x.page_number)],
     )
@@ -74,6 +77,9 @@ class PackageRepository:
         r.status = package.status.value
         r.storage_reference = package.storage_reference
         r.generated_at = package.generated_at
+        r.approved_by = package.approved_by
+        r.approved_at = package.approved_at
+        r.review_notes = package.review_notes
         r.page_count = package.page_count
         r.updated_at = _utcnow()
         self.session.query(PackagePageRecord).filter(
@@ -134,7 +140,9 @@ class PackageRepository:
                 issued_by=r.issued_by, issued_date=r.issued_date,
                 revision_notes=r.revision_notes,
                 status=ProjectPackageStatus(r.status), storage_reference=r.storage_reference,
-                generated_at=r.generated_at, page_count=r.page_count, pages=[],
+                generated_at=r.generated_at, 
+                approved_by=r.approved_by, approved_at=r.approved_at, review_notes=r.review_notes,
+                page_count=r.page_count, pages=[],
             ) for r in records
         ]
 
