@@ -49,6 +49,8 @@ def _package_from_record(r: ProjectPackageRecord, pages: List[PackagePageRecord]
         approved_by=r.approved_by,
         approved_at=r.approved_at,
         review_notes=r.review_notes,
+        generation_error=getattr(r, "generation_error", None),
+        generation_attempts=getattr(r, "generation_attempts", 0) or 0,
         page_count=r.page_count,
         pages=[_page_from_record(p) for p in sorted(pages, key=lambda x: x.page_number)],
     )
@@ -80,6 +82,8 @@ class PackageRepository:
         r.approved_by = package.approved_by
         r.approved_at = package.approved_at
         r.review_notes = package.review_notes
+        r.generation_error = package.generation_error
+        r.generation_attempts = package.generation_attempts
         r.page_count = package.page_count
         r.updated_at = _utcnow()
         self.session.query(PackagePageRecord).filter(
@@ -142,6 +146,8 @@ class PackageRepository:
                 status=ProjectPackageStatus(r.status), storage_reference=r.storage_reference,
                 generated_at=r.generated_at, 
                 approved_by=r.approved_by, approved_at=r.approved_at, review_notes=r.review_notes,
+                generation_error=getattr(r, "generation_error", None),
+                generation_attempts=getattr(r, "generation_attempts", 0) or 0,
                 page_count=r.page_count, pages=[],
             ) for r in records
         ]

@@ -51,8 +51,8 @@ class ImportRepository:
         record.total_rows = job.total_rows
         record.processed_rows = job.processed_rows
         
-        record.error_log = json.dumps([e.dict() for e in job.error_log]) if job.error_log else None
-        record.column_mapping = json.dumps(job.column_mapping.dict()) if job.column_mapping else None
+        record.error_log = json.dumps([e.model_dump() for e in job.error_log]) if job.error_log else None
+        record.column_mapping = json.dumps(job.column_mapping.model_dump()) if job.column_mapping else None
         
         return record
 

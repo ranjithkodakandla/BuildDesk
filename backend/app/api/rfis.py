@@ -6,7 +6,7 @@ RFI API Router (Phase 13)
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.api.rfi_schemas import RFICreateRequest, RFIAnswerRequest, RFIResponse, RFIListResponse
 from app.auth.dependencies import get_current_tenant, require_active_user
@@ -39,7 +39,7 @@ def create_rfi(
         title=body.title,
         question=body.question,
         created_by=user.email,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
     return repo.save(rfi)
 
@@ -68,6 +68,6 @@ def answer_rfi(
     rfi.answer = body.answer
     rfi.status = body.status
     rfi.answered_by = user.email
-    rfi.answered_at = datetime.utcnow()
+    rfi.answered_at = datetime.now(timezone.utc)
     
     return repo.save(rfi)

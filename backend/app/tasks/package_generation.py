@@ -1,10 +1,12 @@
 """
-Background task for PDF generation.
+Background task for PDF package generation (Phase 7, hardened Phase 15).
 """
-import uuid
+from __future__ import annotations
+
 import logging
+import uuid
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from app.db.session import SessionLocal
 from app.models.fabrication import Assembly
@@ -20,15 +22,90 @@ from app.exporters.package_pdf_exporter import PackagePdfExporter
 
 logger = logging.getLogger(__name__)
 
-def generate_pdf_background(
+MAX_GENERATION_ATTEMPTS = 2
+
+
+def _mark_generating(pkg_repo: PackageRepository, tenant_id: uuid.UUID, package_id: uuid.UUID) -> None:
+    record = pkg_repo._get_record(tenant_id, package_id)
+    if record:
+        record.status = ProjectPackageStatus.GENERATING.value
+        record.generation_error = None
+        pkg_repo.session.commit()
+
+
+def _mark_failed(
+    pkg_repo: PackageRepository,
+    tenant_id: uuid.UUID,
+    package_id: uuid.UUID,
+    error_message: str,
+    attempts: int,
+) -> None:
+    record = pkg_repo._get_record(tenant_id, package_id)
+    if record:
+        record.status = ProjectPackageStatus.GENERATION_FAILED.value
+        record.generation_error = error_message[:2000]
+        record.generation_attempts = attempts
+        record.storage_reference = None
+        record.file_size_bytes = None
+        pkg_repo.session.commit()
+
+
+def _mark_ready(
+    pkg_repo: PackageRepository,
+    tenant_id: uuid.UUID,
+    package_id: uuid.UUID,
+    storage_ref: str,
+    file_size: int,
+    attempts: int,
+) -> None:
+    record = pkg_repo._get_record(tenant_id, package_id)
+    if record:
+        record.status = ProjectPackageStatus.READY.value
+        record.storage_reference = storage_ref
+        record.file_size_bytes = file_size
+        record.generated_at = datetime.now(timezone.utc)
+        record.generation_error = None
+        record.generation_attempts = attempts
+        pkg_repo.session.commit()
+
+
+def _load_tenant(tenant_repo: SQLTenantRepository, tenant_id: uuid.UUID) -> Tenant:
+    tenant = tenant_repo.get_by_id(tenant_id)
+    if tenant:
+        return tenant
+    tenant = Tenant(
+        tenant_id=tenant_id,
+        name="BuildDesk Tenant",
+        slug=f"tenant-{str(tenant_id)[:8]}",
+        contact_email="ops@example.com",
+    )
+    tenant_repo.save(tenant)
+    return tenant
+
+
+def _build_assemblies_map(
+    fab_repo: FabricationRepository,
     tenant_id: uuid.UUID,
     project_id: uuid.UUID,
-    package_id: uuid.UUID
-):
-    """
-    Background worker that fetches all data, generates the PDF, uploads to GCS,
-    and updates the ProjectPackageRecord.
-    """
+) -> Dict[str, List[Assembly]]:
+    assemblies_by_type: Dict[str, List[Assembly]] = {}
+    for asm in fab_repo.list_assemblies(tenant_id, project_id):
+        if not asm.unit_type_id:
+            continue
+        full_asm = fab_repo.get_assembly(tenant_id, asm.assembly_id)
+        if not full_asm:
+            continue
+        key = f"{asm.unit_type_id}::{asm.assembly_type.value}"
+        assemblies_by_type.setdefault(key, []).append(full_asm)
+    return assemblies_by_type
+
+
+def _generate_pdf_once(
+    tenant_id: uuid.UUID,
+    project_id: uuid.UUID,
+    package_id: uuid.UUID,
+) -> Tuple[bytes, str]:
+    """Run one generation attempt. Returns (pdf_bytes, storage_reference)."""
     db = SessionLocal()
     try:
         hierarchy_repo = ProjectHierarchyRepository(db)
@@ -38,47 +115,22 @@ def generate_pdf_background(
         tenant_repo = SQLTenantRepository(db)
         storage_svc = CloudStorageService()
 
-        # Update status to generating
         db_package = pkg_repo.get_package(tenant_id, package_id)
         if not db_package:
-            logger.error(f"Package {package_id} not found in DB.")
-            return
+            raise ValueError(f"Package {package_id} not found.")
 
-        db_record = pkg_repo._get_record(tenant_id, package_id)
-        if db_record:
-            db_record.status = ProjectPackageStatus.GENERATING.value
-            db.commit()
-
-        # 1. Load project and tenant
         project = hierarchy_repo.get_project(tenant_id, project_id)
         if not project:
-            raise ValueError("Project not found.")
-            
-        tenant = tenant_repo.get_by_id(tenant_id)
-        if not tenant:
-            tenant = Tenant(
-                tenant_id=tenant_id,
-                name="BuildDesk Tenant",
-                slug=f"tenant-{str(tenant_id)[:8]}",
-                contact_email="ops@example.com",
-            )
-            tenant_repo.save(tenant)
+            raise ValueError("Project not found for tenant.")
 
-        # 2. Build UnitTypeGroups and assemblies map for the exporter
+        if db_package.project_id != project_id:
+            raise ValueError("Package does not belong to the specified project.")
+
+        tenant = _load_tenant(tenant_repo, tenant_id)
         groups = svc.get_unit_type_groups(tenant_id, project_id)
-        all_assemblies = fab_repo.list_assemblies(tenant_id, project_id)
         summary = svc.get_summary(tenant_id, project_id)
+        assemblies_by_type = _build_assemblies_map(fab_repo, tenant_id, project_id)
 
-        # Build assemblies map: unit_type_id::assembly_type → [Assembly, ...]
-        assemblies_by_type: Dict[str, List[Assembly]] = {}
-        for asm in all_assemblies:
-            if asm.unit_type_id:
-                full_asm = fab_repo.get_assembly(tenant_id, asm.assembly_id)
-                if full_asm:
-                    key = f"{asm.unit_type_id}::{asm.assembly_type.value}"
-                    assemblies_by_type.setdefault(key, []).append(full_asm)
-
-        # 3. Generate PDF bytes
         exporter = PackagePdfExporter()
         pdf_bytes = exporter.export(
             project=project,
@@ -88,30 +140,78 @@ def generate_pdf_background(
             assemblies_by_type=assemblies_by_type,
             summary=summary,
         )
+        if not pdf_bytes:
+            raise ValueError("PDF exporter returned empty bytes.")
 
-        # 4. Upload to Cloud Storage
         storage_ref = storage_svc.upload_pdf(project_id, package_id, pdf_bytes)
+        return pdf_bytes, storage_ref
+    finally:
+        db.close()
 
-        # 5. Update Package Record
-        if db_record:
-            db_record.status = ProjectPackageStatus.READY.value
-            db_record.storage_reference = storage_ref
-            db_record.file_size_bytes = len(pdf_bytes)
-            db_record.generated_at = datetime.now(timezone.utc)
-            db.commit()
-        logger.info(f"Successfully generated package {package_id}")
 
-    except Exception as e:
-        logger.exception(f"Failed to generate package {package_id}: {e}")
+def generate_pdf_background(
+    tenant_id: uuid.UUID,
+    project_id: uuid.UUID,
+    package_id: uuid.UUID,
+) -> None:
+    """
+    Background worker: generates PDF with bounded retries and persists failure metadata.
+    """
+    db = SessionLocal()
+    pkg_repo = PackageRepository(db)
+    try:
+        if not pkg_repo.get_package(tenant_id, package_id):
+            logger.error("Package %s not found for tenant %s", package_id, tenant_id)
+            return
+
+        _mark_generating(pkg_repo, tenant_id, package_id)
+
+        last_error: Optional[str] = None
+        for attempt in range(1, MAX_GENERATION_ATTEMPTS + 1):
+            try:
+                pdf_bytes, storage_ref = _generate_pdf_once(tenant_id, project_id, package_id)
+                _mark_ready(
+                    pkg_repo,
+                    tenant_id,
+                    package_id,
+                    storage_ref,
+                    len(pdf_bytes),
+                    attempt,
+                )
+                logger.info(
+                    "Package %s generated successfully (attempt %s/%s)",
+                    package_id,
+                    attempt,
+                    MAX_GENERATION_ATTEMPTS,
+                )
+                return
+            except Exception as exc:
+                last_error = str(exc)
+                logger.warning(
+                    "Package %s generation attempt %s/%s failed: %s",
+                    package_id,
+                    attempt,
+                    MAX_GENERATION_ATTEMPTS,
+                    exc,
+                )
+                db.rollback()
+                pkg_repo = PackageRepository(db)
+
+        _mark_failed(
+            pkg_repo,
+            tenant_id,
+            package_id,
+            last_error or "Unknown generation error",
+            MAX_GENERATION_ATTEMPTS,
+        )
+        logger.error("Package %s failed after %s attempts", package_id, MAX_GENERATION_ATTEMPTS)
+    except Exception as exc:
+        logger.exception("Unhandled failure generating package %s: %s", package_id, exc)
         db.rollback()
-        # Try to set status to failed
         try:
             pkg_repo = PackageRepository(db)
-            db_package = pkg_repo._get_record(tenant_id, package_id)
-            if db_package:
-                db_package.status = ProjectPackageStatus.GENERATION_FAILED.value
-                db.commit()
-        except Exception as fallback_e:
-            logger.error(f"Failed to set generation_failed state: {fallback_e}")
+            _mark_failed(pkg_repo, tenant_id, package_id, str(exc), MAX_GENERATION_ATTEMPTS)
+        except Exception as fallback_exc:
+            logger.error("Failed to persist generation_failed state: %s", fallback_exc)
     finally:
         db.close()

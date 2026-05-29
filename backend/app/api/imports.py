@@ -22,6 +22,14 @@ from app.services.import_service import ImportService
 
 router = APIRouter(prefix="/projects/{project_id}/imports", tags=["Imports"])
 
+
+def _require_import_job(svc: ImportService, tenant_id: uuid.UUID, project_id: uuid.UUID, job_id: uuid.UUID):
+    job = svc.import_repo.get_job(tenant_id, job_id)
+    if not job or job.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Import job not found.")
+    return job
+
+
 def get_import_service(db: Session = Depends(get_db)) -> ImportService:
     import_repo = ImportRepository(db)
     hierarchy_repo = ProjectHierarchyRepository(db)
@@ -42,7 +50,7 @@ def _map_job_out(job) -> ImportJobResponse:
             {"row_index": e.row_index, "column": e.column, "message": e.message, "severity": e.severity.value}
             for e in job.error_log
         ],
-        column_mapping=ImportMappingSchema(**job.column_mapping.dict()) if job.column_mapping else None,
+        column_mapping=ImportMappingSchema(**job.column_mapping.model_dump()) if job.column_mapping else None,
         created_at=job.created_at,
         updated_at=job.updated_at
     )
@@ -74,7 +82,8 @@ def map_import_columns(
     svc: ImportService = Depends(get_import_service),
 ):
     try:
-        mapping = ImportMapping(**body.mapping.dict())
+        _require_import_job(svc, tenant_id, project_id, job_id)
+        mapping = ImportMapping(**body.mapping.model_dump())
         job = svc.update_mapping(tenant_id, job_id, mapping)
         return _map_job_out(job)
     except ValueError as e:
@@ -90,6 +99,7 @@ async def validate_import(
     _user: User = Depends(require_active_user),
     svc: ImportService = Depends(get_import_service),
 ):
+    _require_import_job(svc, tenant_id, project_id, job_id)
     file_bytes = await file.read()
     try:
         job, valid_rows = svc.validate_import(tenant_id, job_id, file_bytes)
@@ -115,6 +125,7 @@ async def execute_import(
     _user: User = Depends(require_active_user),
     svc: ImportService = Depends(get_import_service),
 ):
+    _require_import_job(svc, tenant_id, project_id, job_id)
     file_bytes = await file.read()
     try:
         job = svc.execute_import(tenant_id, job_id, file_bytes)

@@ -75,6 +75,8 @@ def _map_package(pkg) -> PackageResponse:
         approved_by=pkg.approved_by,
         approved_at=pkg.approved_at,
         review_notes=pkg.review_notes,
+        generation_error=pkg.generation_error,
+        generation_attempts=pkg.generation_attempts,
         page_count=pkg.page_count,
         pages=[
             PackagePageResponse(
@@ -97,6 +99,29 @@ from fastapi.responses import FileResponse
 from app.api.package_schemas import PackageGenerateRequest, PackageResponse, PackageListResponse, PackageTransitionRequest
 from app.exporters.assembly_svg_exporter import AssemblySvgExporter
 from app.tasks.package_generation import generate_pdf_background
+from app.models.project_package import ProjectPackageStatus
+
+
+def _package_download_guard(package) -> None:
+    if package.status == ProjectPackageStatus.GENERATION_FAILED:
+        detail = package.generation_error or "Package PDF generation failed."
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": detail,
+                "generation_attempts": package.generation_attempts,
+                "status": package.status.value,
+            },
+        )
+    if package.status != ProjectPackageStatus.READY or not package.storage_reference:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": f"Package is not ready yet. Status: {package.status.value}",
+                "generation_error": package.generation_error,
+            },
+        )
+
 
 @router.post("/projects/{project_id}/package/generate", response_model=PackageResponse)
 def generate_package(
@@ -134,6 +159,44 @@ def generate_package(
     return _map_package(package)
 
 
+@router.post(
+    "/projects/{project_id}/packages/{package_id}/retry-generation",
+    response_model=PackageResponse,
+)
+def retry_package_generation(
+    project_id: uuid.UUID,
+    package_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
+    _user: User = Depends(require_active_user),
+    package_repo: PackageRepository = Depends(get_package_repo),
+):
+    """Re-queue PDF generation for a failed or stuck package."""
+    package = package_repo.get_package(tenant_id, package_id)
+    if not package or package.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Package not found.")
+    if package.status not in (
+        ProjectPackageStatus.GENERATION_FAILED,
+        ProjectPackageStatus.GENERATING,
+        ProjectPackageStatus.DRAFT,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot retry generation for status '{package.status.value}'.",
+        )
+
+    background_tasks.add_task(
+        generate_pdf_background,
+        tenant_id=tenant_id,
+        project_id=project_id,
+        package_id=package_id,
+    )
+    package.status = ProjectPackageStatus.GENERATING
+    package.generation_error = None
+    package_repo.save_package(package)
+    return _map_package(package_repo.get_package(tenant_id, package_id))
+
+
 @router.get("/projects/{project_id}/package/status", response_model=PackageResponse)
 def get_package_status(
     project_id: uuid.UUID,
@@ -166,8 +229,7 @@ def transition_package_status(
     if not package or str(package.project_id) != str(project_id):
         raise HTTPException(status_code=404, detail="Package not found.")
         
-    from app.models.project_package import ProjectPackageStatus
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     package.status = body.status
     if body.review_notes:
@@ -175,7 +237,7 @@ def transition_package_status(
         
     if body.status in (ProjectPackageStatus.APPROVED, ProjectPackageStatus.REJECTED):
         package.approved_by = user.email
-        package.approved_at = datetime.utcnow()
+        package.approved_at = datetime.now(timezone.utc)
         
     package_repo.save_package(package)
     db.commit()
@@ -201,10 +263,8 @@ def download_package_pdf(
     if not package:
         raise HTTPException(status_code=404, detail="No package found. Call POST /package/generate first.")
 
-    if package.status != "ready" or not package.storage_reference:
-        raise HTTPException(status_code=400, detail=f"Package is not ready yet. Status: {package.status}")
+    _package_download_guard(package)
 
-    # For local storage fallback, we return a FileResponse
     from app.services.cloud_storage import CloudStorageService
     storage_svc = CloudStorageService()
     url_or_path = storage_svc.get_download_url(package.storage_reference)
@@ -217,7 +277,6 @@ def download_package_pdf(
             content_disposition_type="inline"
         )
     
-    # If it was a real signed URL, we would return a RedirectResponse
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url=url_or_path)
 
@@ -254,8 +313,7 @@ def download_specific_package_pdf(
     if not package or str(package.project_id) != str(project_id):
         raise HTTPException(status_code=404, detail="Package not found.")
 
-    if package.status != "ready" or not package.storage_reference:
-        raise HTTPException(status_code=400, detail=f"Package is not ready yet. Status: {package.status}")
+    _package_download_guard(package)
 
     from app.services.cloud_storage import CloudStorageService
     storage_svc = CloudStorageService()

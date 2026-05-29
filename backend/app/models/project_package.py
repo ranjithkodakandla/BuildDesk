@@ -119,6 +119,8 @@ class ProjectPackage(BaseDomainModel):
     approved_by:       Optional[str]            = Field(default=None, max_length=200)
     approved_at:       Optional[datetime]       = Field(default=None)
     review_notes:      Optional[str]            = Field(default=None)
+    generation_error:  Optional[str]            = Field(default=None, max_length=2000)
+    generation_attempts: int                  = Field(default=0)
     
     page_count:        int                      = Field(default=0)
     pages:             List[PackagePage]        = Field(default_factory=list)

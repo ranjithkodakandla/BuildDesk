@@ -58,6 +58,8 @@ class PackageResponse(BaseModel):
     approved_by:       Optional[str]
     approved_at:       Optional[datetime]
     review_notes:      Optional[str]
+    generation_error:  Optional[str] = None
+    generation_attempts: int = 0
     
     page_count:        int
     pages:             List[PackagePageResponse]

@@ -77,3 +77,4 @@ backend/builddesk.db
 
 # runtime export artifacts
 backend/artifacts/exports/
+backend/artifacts/mock_gcs/

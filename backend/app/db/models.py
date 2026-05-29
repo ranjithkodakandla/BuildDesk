@@ -361,6 +361,8 @@ class ProjectPackageRecord(Base):
     approved_by: Mapped[Optional[str]] = mapped_column(String(200), nullable=True, default=None)
     approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
     review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
+    generation_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
+    generation_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     
     page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

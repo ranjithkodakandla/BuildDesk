@@ -311,6 +311,14 @@ Corrected roadmap:
 - **Smoke Assessment:** Legacy `smoke_*.py` scripts inventoried; most pre-auth API smokes are obsolete (401 without JWT). See Phase 14.5 validation report for CI recommendations.
 - **Validation:** Backend pytest `64 / 64`; frontend `17 / 17`; frontend production build succeeds; pilot workflow green.
 
+### Phase 15: Production Launch Hardening (✅ Complete)
+**Goal:** Launch readiness through reliability, security, deployment validation, and technical debt cleanup — no new fabrication features.
+- **Package Generation Reliability:** Bounded retries (`MAX_GENERATION_ATTEMPTS=2`), `generation_error` + `generation_attempts` metadata, `POST .../packages/{id}/retry-generation`, structured download errors for failed packages.
+- **Auth & Tenant Audit:** Cross-tenant project access tests; import/export job project scoping guards; protected-route auth tests documented in `test_phase15_tenant_security.py`.
+- **Deployment Readiness:** `scripts/validate_deployment_readiness.py` + `docs/phase15-deployment-validation.md` (live GCP steps documented for manual execution).
+- **Technical Debt:** Pydantic `model_dump()` in import paths; timezone-aware datetimes in RFI and package approval APIs.
+- **Validation:** Backend pytest `70 / 70`; frontend `17 / 17`; pilot workflow green.
+
 Deferred:
   □ Complex BI Dashboards
   □ StoneDesk integration

@@ -84,7 +84,7 @@ async def download_export(
     svc: ExportService = Depends(get_export_service),
 ):
     job = svc.export_repo.get_job(tenant_id, job_id)
-    if not job:
+    if not job or job.project_id != project_id:
         raise HTTPException(status_code=404, detail="Export job not found")
         
     if job.status != ExportStatus.COMPLETED or not job.file_path:

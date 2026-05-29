@@ -17,15 +17,19 @@ from sqlalchemy.orm import sessionmaker
 # Setup system path to import app
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
+from alembic import command
+from alembic.config import Config
+
 from app.main import app
-from app.db.models import Base
 from app.db.session import engine, SessionLocal
 from app.models.fabrication import AssemblyType, CutoutType, EdgeType, MountType, PartType, Position, SplashType
 from app.models.hierarchy import UnitVariant
 
-# Override engine to ensure we don't mess up dev DB, or just use dev DB since it's local.
-# We'll use the main app to hit the real local SQLite DB.
-Base.metadata.create_all(bind=engine)
+# Ensure local dev DB schema matches Alembic head before exercising the workflow.
+_backend_dir = os.path.join(os.path.dirname(__file__), "..")
+_alembic_cfg = Config(os.path.join(_backend_dir, "alembic.ini"))
+_alembic_cfg.set_main_option("script_location", os.path.join(_backend_dir, "alembic"))
+command.upgrade(_alembic_cfg, "head")
 
 client = TestClient(app)
 

@@ -779,3 +779,10 @@ Phase 14.5 closed the loop between tenant profile configuration and issued-packa
 - **Profile → PDF path:** `PUT /api/v1/tenant/profile` persists branding on `TenantRecord`. `POST /projects/{id}/package/generate` builds the manifest synchronously, then `generate_pdf_background` loads the tenant via `SQLTenantRepository` and passes it to `PackagePdfExporter`.
 - **Async worker DB access:** Background tasks use `SessionLocal`; integration tests patch `app.tasks.package_generation.SessionLocal` to the test engine so workers share the same database session factory as HTTP handlers.
 - **Validation layers:** Pytest integration (`test_phase14_5_integration.py`) covers the branding pipeline; `run_pilot_workflow.py` exercises the full multifamily operational workflow (import-ready hierarchy, packages, revisions, approvals, exports) via authenticated HTTP.
+
+### Launch Hardening (Phase 15)
+
+- **Async PDF reliability:** `generate_pdf_background` retries up to two attempts, persists `generation_error` and `generation_attempts` on `ProjectPackageRecord`, and exposes `POST /projects/{id}/packages/{package_id}/retry-generation` for operational recovery.
+- **Failure visibility:** Package status API returns generation metadata; PDF download returns `409` with error detail when generation failed.
+- **Tenant safety:** Import/export routes validate `project_id` path matches job ownership; hierarchy and repository layers continue to scope by `tenant_id`.
+- **Deployment checks:** `validate_deployment_readiness.py` verifies Alembic head, DB connectivity, and environment flags locally; GCS/Cloud Run validation documented for live environments.

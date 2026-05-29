@@ -8,35 +8,30 @@
 
 | Field              | Value                                  |
 |--------------------|----------------------------------------|
-| Last completed phase | Phase 14.5 — Integration Validation |
-| Git branch         | `feat/phase14-5-integration-validation` |
-| Test baseline      | Backend `64 / 64` pytest; frontend `17 / 17`; production build succeeds |
-| Migration state    | Up to date at `7e84f9a21c30` |
+| Last completed phase | Phase 15 — Production Launch Hardening |
+| Git branch         | `feat/phase15-launch-hardening` |
+| Test baseline      | Backend `70 / 70` pytest; frontend `17 / 17`; production build succeeds |
+| Migration state    | Head `a8f1c2d3e4b5` (package generation metadata) |
 | Pilot workflow     | `backend/scripts/run_pilot_workflow.py` passing end-to-end |
+| Deployment script  | `backend/scripts/validate_deployment_readiness.py` |
 
 ---
 
 ## Immediate Next Milestone
 
-**Phase 15 — Production Launch Hardening**
+**Phase 16 — Live Cloud Launch Validation**
 
-Phase 14.5 integration validation is complete. Phase 14 operational features are stable: tenant profiles, advanced search, bulk unit workflows, dashboard queues, and tenant-aware async PDF generation.
+Phase 15 hardening is complete on the application side. Remaining work is live GCP verification and operational monitoring setup.
 
-### Next Execution Target: Phase 15 — Launch Hardening
+### Next Execution Target
 
-Focus on launch readiness, not new product surface area.
-
-**Key Objectives for Phase 15:**
-1. **Operational Reliability:** Harden background package generation failure handling, storage cleanup, and retry visibility.
-2. **Security & Tenant Safety:** Review auth edge cases, route permissions, and tenant-scoped query coverage.
-3. **Deployment Readiness:** Revalidate Cloud Run + Cloud SQL migrations and artifact storage configuration against the recovered Phase 14 schema.
-
-**Required Verification:**
-- Run backend tests, frontend tests, frontend build, and migration upgrade on a clean database.
-- Validate a generated PDF uses tenant profile metadata.
+1. Run `alembic upgrade head` against Cloud SQL via Auth Proxy.
+2. Deploy to Cloud Run with `USE_LOCAL_STORAGE=false` and GCS bucket configured.
+3. Execute post-deploy checklist in `docs/phase15-deployment-validation.md`.
+4. Add CI job: pytest + pilot + deployment readiness script.
 
 ---
 
 ## Pending Blockers
 
-- None currently blocking Phase 15.
+- Live Cloud Run / Cloud SQL / GCS validation requires GCP credentials (documented, not automated in Phase 15).
