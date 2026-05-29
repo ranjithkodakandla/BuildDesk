@@ -158,6 +158,12 @@ Tenant
 * **Assembly**: A logical grouping of pieces (e.g. an entire L-Kitchen with its island).
 * **Part**: A physical piece of stone.
 * **Variant Logic**: Unit/Assembly variants (e.g., `MIRROR`, `ADA`) dictate downstream geometric transformations. Assemblies inherit variants from Units if left as standard.
+
+### Phase 9: Import Engine
+To rapidly populate the `Unit` hierarchy, the `ImportService` orchestrates a two-step CSV/Excel intake:
+1. **Validation & Preview:** Translates raw schedules via dynamic `ImportMapping`, validates references (e.g. valid `unit_type`), and identifies duplicates.
+2. **Execution:** Materializes the structured rows into domain entities.
+Error logs and mappings are isolated per `tenant_id` on the `ImportJobRecord`.
 * **Additivity**: Legacy single-shape geometry records (`GeometryModel`) coexist alongside the normalized Assembly structure during the transition phase.
 
 ## Service Layer

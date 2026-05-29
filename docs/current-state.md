@@ -250,7 +250,14 @@ Corrected roadmap:
 - **Frontend Enhancements:** Added a "Bulk Generate Units" form in `HierarchyPanel.tsx` and "Duplicate" functionality in `AssembliesPanel.tsx`.
 - **Pilot Revalidation:** Updated `run_pilot_workflow.py` to instantiate 150 units using the new bulk engine, validating authoring speed improvement.
 
-Deferred (pending Phase 9):
-  □ asyncpg migration (Deferred)
+### Phase 9: Import Foundation (CSV/Excel Ready) (✅ Complete)
+**Goal:** Create the first intake layer for real-world project setup via structured schedule imports.
+- **Import Domain Models:** Added `ImportJobRecord` to track uploads, mappings, validation errors, and execution state.
+- **CSV Import Engine:** Implemented mapping abstraction (`ImportMapping`) to allow flexible column naming (e.g., `UnitNumber`, `UnitType`).
+- **Validation Workflow:** Implemented pre-flight validation to detect duplicate units, missing types, and missing hierarchy references before committing to the database.
+- **Frontend UI:** Built `ImportModal.tsx` to handle file upload, column mapping selection, validation preview, and execution.
+- **Pilot Revalidation:** The existing pilot script continues to work, demonstrating backward compatibility and resilience of the domain logic.
+
+Deferred (pending Phase 10):
+  □ Export Engine Enhancements (Dimension Callouts, Cover Page, TOC)
   □ Distributed Workers (Celery/Kafka) - *Only when scale dictates (>1000 concurrent units)*
-  □ Import Workflow (CSV/Excel) - Future phases

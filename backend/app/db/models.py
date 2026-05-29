@@ -368,3 +368,32 @@ class PackagePageRecord(Base):
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     content_ref: Mapped[str] = mapped_column(String(500), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+# ---------------------------------------------------------------------------
+# Import Domain (Phase 9)
+# ---------------------------------------------------------------------------
+
+class ImportJobRecord(Base):
+    """
+    Tracks bulk unit/assembly import requests via CSV or Excel.
+    """
+    __tablename__ = "import_jobs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
+    
+    filename: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
+    
+    total_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    processed_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    
+    # Store arbitrary JSON describing mapping, validation errors, or preview state.
+    # We use Text here instead of native JSON to maintain broad compatibility with sqlite.
+    error_log: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
+    column_mapping: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

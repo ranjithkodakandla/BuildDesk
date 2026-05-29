@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Project, UnitType, Unit, UnitVariant } from '../types/hierarchy';
 import { projectsApi } from '../api/projects';
+import { ImportModal } from './ImportModal';
 
 interface Props {
   project: Project;
@@ -10,6 +11,7 @@ export const HierarchyPanel: React.FC<Props> = ({ project }) => {
   const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const [newTypeCode, setNewTypeCode] = useState('');
   const [newTypeName, setNewTypeName] = useState('');
@@ -131,7 +133,15 @@ export const HierarchyPanel: React.FC<Props> = ({ project }) => {
       <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold">Units</h2>
-          <div className="text-sm text-gray-500 font-medium">Total: {units.length}</div>
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-500 font-medium">Total: {units.length}</div>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+            >
+              Import CSV
+            </button>
+          </div>
         </div>
         
         {/* Bulk Create Form */}
@@ -220,6 +230,16 @@ export const HierarchyPanel: React.FC<Props> = ({ project }) => {
           })}
         </div>
       </section>
+
+      {showImportModal && (
+        <ImportModal
+          projectId={project.project_id}
+          onClose={() => {
+            setShowImportModal(false);
+            loadData();
+          }}
+        />
+      )}
     </div>
   );
 };
