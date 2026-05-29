@@ -228,7 +228,15 @@ Corrected roadmap:
 - **Types and API Clients:** Defined `hierarchy.ts`, `fabrication.ts`, `packages.ts` and added robust Axios clients for each domain.
 - **Frontend Tests:** Added frontend testing setup via Vitest.
 
-Deferred (pending Phase 6):
+### Phase 6: Real Project Pilot Validation (✅ Complete)
+**Goal:** Validate BuildDesk against a realistic production scenario to ensure product-market fit before infrastructure hardening.
+- **Pilot Script:** Developed `backend/scripts/run_pilot_workflow.py` which uses the FastAPI `TestClient` to execute a full 40-unit, multi-building project setup.
+- **Workflow Testing:** Validated project creation, hierarchy modeling, unit assignment, assembly building, SVG previewing, and PDF package generation strictly through the API layer.
+- **Usability & Gap Review:** Documented findings in `docs/pilot-validation.md`. The domain model passed the confidence test flawlessly. Gaps were identified in frontend bulk-operations and backend synchronous PDF generation.
+- **Architecture Validation:** Confirmed that the current architecture strongly supports the domain, but validated that asynchronous processing for large PDFs is a strict requirement for the next phase.
+
+Deferred (pending Phase 7):
+  □ Background PDF Generation (Celery / BackgroundTasks)
   □ Cloud Storage (GCS) for PDF persistence
-  □ asyncpg migration
-  □ Assembly thumbnail generation for type sheets
+  □ Bulk-Unit Creation UI (Frontend)
+  □ asyncpg migration (Deferred)

@@ -617,3 +617,18 @@ The frontend domain types strictly mirror the backend Pydantic models:
 
 ### Live Preview Pipeline
 The frontend integrates seamlessly with the backend's `FabricationDrawingEngine` by embedding a live `<img>` tag that sources the `/assemblies/{id}/preview/svg` endpoint. As users modify dimensions or edges in the React forms, saving the assembly instantly regenerates the SVG preview, providing immediate visual feedback that matches the exact visual semantics of the final PDF package.
+
+---
+
+## Real Project Pilot Validation (Phase 6)
+
+During the Phase 6 Pilot, the entire architecture (Frontend + Backend + DB) was validated against a 40-unit, multi-floor project ("The Highland Residences").
+
+### Validated Decisions
+1. **Domain Isolation:** Separating Unit Types from Units aligns perfectly with fabrication logic.
+2. **REST API boundaries:** The FastAPI routers correctly handled the hierarchical and piecewise construction of assemblies.
+3. **SVG Fidelity:** Generating the SVG on the backend using the *exact same* scaling math as the PDF ensures total WYSIWYG parity.
+
+### Required Architecture Adjustments
+1. **Synchronous Generation Bottleneck:** Generating a 40-unit PDF synchronously over HTTP is viable (takes ~2 seconds), but a 300-unit package will cause HTTP timeouts. The PDF generation pipeline **must** be moved to a background worker queue, with the final artifact uploaded to Cloud Storage (GCS).
+2. **UI Bulk Tools:** The React frontend requires bulk mutation tools (e.g., "Assign Units 101-108 to A1") rather than single-record forms to handle real-world scale.
