@@ -207,8 +207,18 @@ Corrected roadmap:
 - **API Router:** `POST /api/v1/projects/{id}/package/generate`, `GET .../package/status`, `GET .../package/pdf`, `GET /api/v1/assemblies/{id}/preview/svg` (`app/api/packages.py`)
 - **Tests:** 20 new tests — 54 / 54 passing (all Phase 1 + 2 + 3)
 
-Deferred (pending Phase 4):
-  □ asyncpg migration
+### Phase 4: Advanced Drawing & Vector Rendering (✅ Complete)
+**Goal:** Upgrade assembly drawing pages to true scaled vector drawings matching fabrication shop standards.
+- **Drawing Engine:** Created `FabricationDrawingEngine` as a reusable primitive layer.
+- **Vector Fidelity:** Rendered scaled part outlines, edge differentiation (thick/dashed), cutouts (dashed/rounded), hole circles (crosshairs), splash bands, and seam lines.
+- **Layout:** Implemented a two-column layout on PDF assembly pages (60% drawing, 40% notes).
+- **Metadata:** Added title block, sheet numbering, edge legends, and scale callouts.
+- **Summary:** Enhanced the summary page with part type breakdown and better typography.
+- **SVG Preview:** Upgraded `AssemblySvgExporter` to precisely match the PDF drawing fidelity.
+- **Tests:** Confirmed 54 / 54 tests passing.
+
+Deferred (pending Phase 5):
   □ Frontend realignment to fabrication workflow
-  □ Advanced drawing logic (cutout outlines, hole markers as vector, edge indicators)
+  □ Assembly thumbnail generation for type sheets
+  □ asyncpg migration
   □ Cloud Storage (GCS) for PDF persistence

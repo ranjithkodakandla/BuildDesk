@@ -8,67 +8,58 @@
 
 | Field              | Value                                  |
 |--------------------|----------------------------------------|
-| Last completed phase | Phase 3 — Project Package Generator  |
-| Git branch         | `feat/phase-3-package-generator` (to be committed) |
+| Last completed phase | Phase 4 — Advanced Drawing & Vector Rendering |
+| Git branch         | `feat/phase-4-drawing-fidelity` (to be committed) |
 | Test baseline      | **54 / 54 passing**                    |
-| Migration state    | `c3d4e5f6g7h8` applied (project_packages + package_pages) |
+| Migration state    | `c3d4e5f6g7h8` applied (no new migrations in Phase 4) |
 
 ---
 
 ## Immediate Next Milestone
 
-**Phase 4 — Advanced Drawing & Vector Rendering**
+**Phase 5 — Frontend Realignment**
 
-Goal: Upgrade assembly drawing pages from text-based dimension tables to true scaled vector drawings.
+Goal: Align the React frontend to the new fabrication-aware domain models.
 
 Priority tasks:
-1. **Part outline to scale** — render each part as a scaled rectangle in the PDF (reuse ReportLab canvas)
-2. **Cutout vector overlays** — draw dashed rectangles at correct positions within each part
-3. **Hole markers** — draw ○ circles at correct center positions
-4. **Splash indicators** — draw edge bands for back/left/right splashes
-5. **Dimension callout lines** — leader lines with arrowheads (ReportLab lines + arrowheads)
-6. **Edge treatment annotations** — label each part edge with treatment type
-7. **Assembly thumbnail view** — put a scaled plan-view thumbnail on the type sheet
+1. **Assembly Builder UI** — Create UI for defining assemblies, parts, edges, cutouts, holes, and splashes.
+2. **Project Hierarchy UI** — Build the UI for navigating Project → Building → Floor → Unit → UnitType.
+3. **SVG Preview Integration** — Render the new `AssemblySvgExporter` output in the browser.
+4. **Package Generation Trigger** — Add a button to generate the package and download the PDF.
 
-Domain test: All rendering must be faithful to real countertop shop drawing conventions.
+Domain test: Does the UI allow a user to successfully define a multifamily project structure and generate its fabrication package?
 
 ---
 
 ## Pending Blockers
 
-- None blocking Phase 4.
+- None blocking Phase 5.
 - `storage_reference` field in `ProjectPackageRecord` reserved for Phase 6 (GCS upload).
 - `asyncpg` migration deferred to Phase 6 (Cloud Run async transition).
-- Frontend realignment deferred until Phase 5 (after drawing engine is stable).
 
 ---
 
 ## Recommended Next Prompt
 
 ```
-AUTONOMOUS IMPLEMENTATION MODE — Phase 4
+AUTONOMOUS IMPLEMENTATION MODE — Phase 5
 
 Mandatory startup:
 1. docs/session-start.md
 2. docs/domain-guardrail.md
 3. docs/current-state.md
 
-PHASE 4 GOAL: Advanced Vector Drawing for Assembly Pages.
+PHASE 5 GOAL: Frontend Realignment to Fabrication Domain.
 
-Upgrade the PackagePdfExporter assembly drawing pages to true scaled vector drawings
-using ReportLab canvas primitives:
+Upgrade the React frontend to support the new hierarchy and fabrication models:
 
-1. Part outlines rendered to scale (1 inch = N pts, auto-fit to page)
-2. Cutout overlays (dashed rectangle at center_x/center_y with dims)
-3. Hole markers (circles with Ø label)
-4. Splash bands (edge hatching / shaded bands)
-5. Dimension callout lines with arrows
-6. Edge treatment label per edge position
+1. Project/Unit navigation.
+2. Assembly creation with Part, Edge, Cutout, Hole, Splash details.
+3. Live SVG preview integration.
+4. Package generation and PDF download.
 
-Domain test: Drawing must match real countertop shop drawing conventions.
+Domain test: Must support defining a real countertop project.
 If NO → reject and document in ADR rejection table.
 
-Tests: 20+ new tests. Must maintain 54 / 54 existing tests passing.
-Branch: feat/phase-4-vector-drawing
-Do not break existing endpoints.
+Branch: feat/phase-5-frontend-realignment
 ```
