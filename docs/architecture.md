@@ -1,5 +1,10 @@
 # BuildDesk Architecture
 
+> **ADR-001 Domain Guardrail is active.**
+> Before implementing any feature, consult [`docs/domain-guardrail.md`](./domain-guardrail.md).
+> BuildDesk is a **multifamily countertop fabrication package system** — not a geometry demo, not a CAD tool.
+> Every feature must pass the domain test described in that document.
+
 Platform architecture:
 
 Frontend
