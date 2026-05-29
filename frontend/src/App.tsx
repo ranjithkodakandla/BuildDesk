@@ -32,7 +32,7 @@ const App: React.FC = () => {
           }
         />
         <Route
-          path="/workspace"
+          path="/projects/:projectId"
           element={
             <ProtectedRoute>
               <WorkspacePage />

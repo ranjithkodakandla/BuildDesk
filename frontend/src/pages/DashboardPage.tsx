@@ -1,155 +1,95 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { projectsApi } from '../api/projects';
+import { Project, ProjectStatus } from '../types/hierarchy';
 import { useAuthStore } from '../store/authStore';
-import { healthApi, type HealthResponse } from '../api/auth';
 
 export const DashboardPage: React.FC = () => {
-  const { user, tenantId, logout } = useAuthStore();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [healthLoading, setHealthLoading] = useState(true);
+  const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
-    healthApi
-      .check()
-      .then(({ data }) => setHealth(data))
-      .catch(() => setHealth(null))
-      .finally(() => setHealthLoading(false));
+    const fetchProjects = async () => {
+      try {
+        const data = await projectsApi.listProjects();
+        setProjects(data);
+      } catch (err) {
+        console.error('Failed to load projects', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleCreateProject = async () => {
+    try {
+      const newProj = await projectsApi.createProject({
+        name: 'New Fabrication Project',
+        status: ProjectStatus.DRAFT,
+        hierarchy_config: { has_buildings: false, has_floors: false, has_unit_types: true },
+      });
+      navigate(`/projects/${newProj.project_id}`);
+    } catch (err) {
+      console.error('Failed to create project', err);
+    }
   };
-
-  const dbBadge = (db: string | undefined) => {
-    if (!db) return null;
-    const isCloud = db.includes('cloudsql');
-    return (
-      <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-          isCloud
-            ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-            : 'bg-slate-800 text-slate-400 border border-slate-700'
-        }`}
-      >
-        <span className={`w-1.5 h-1.5 rounded-full ${isCloud ? 'bg-emerald-400' : 'bg-slate-400'}`} />
-        {db}
-      </span>
-    );
-  };
-
-  const quickShapes: Array<{ label: string; shape: string; icon: string }> = [
-    { label: 'Rectangle', shape: 'rectangle', icon: '▭' },
-    { label: 'Island', shape: 'island', icon: '⬚' },
-    { label: 'Vanity', shape: 'vanity', icon: '▯' },
-    { label: 'Straight Kitchen', shape: 'straight_kitchen', icon: '▬' },
-    { label: 'L-Kitchen', shape: 'l_kitchen', icon: '⌐' },
-  ];
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Top Nav */}
-      <nav className="border-b border-slate-800 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">B</span>
-            </div>
-            <span className="text-white font-semibold">BuildDesk</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-slate-400 text-sm">{user?.email}</span>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-slate-400 hover:text-white transition-colors px-3 py-1.5 border border-slate-700 rounded-lg hover:border-slate-600"
-            >
-              Sign out
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">BuildDesk Fabrication</h1>
+          <p className="text-sm text-gray-500">Multifamily Package Generator</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <button onClick={handleCreateProject} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+            + New Project
+          </button>
+          <button onClick={logout} className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50">
+            Sign out
+          </button>
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-7xl w-full mx-auto p-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Active Projects</h2>
+        {loading ? (
+          <p className="text-gray-500">Loading projects...</p>
+        ) : projects.length === 0 ? (
+          <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 text-center">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
+            <p className="text-gray-500 mb-4">Create your first multifamily countertop project to get started.</p>
+            <button onClick={handleCreateProject} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+              Create Project
             </button>
           </div>
-        </div>
-      </nav>
-
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        {/* Page header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400 mt-1">Welcome back, {user?.email}</p>
-        </div>
-
-        {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
-          {/* User card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Account</p>
-            <p className="text-white font-medium truncate">{user?.email}</p>
-            <p className="text-slate-400 text-sm mt-1">
-              Role:{' '}
-              <span className="capitalize text-violet-400 font-medium">{user?.role}</span>
-            </p>
-          </div>
-
-          {/* Tenant card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Tenant</p>
-            <p className="text-slate-300 text-xs font-mono break-all leading-relaxed">{tenantId}</p>
-          </div>
-
-          {/* Backend health card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Backend</p>
-            {healthLoading ? (
-              <p className="text-slate-500 text-sm animate-pulse">Checking…</p>
-            ) : health ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span className="text-emerald-400 text-sm font-medium">Operational</span>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((p) => (
+              <div 
+                key={p.project_id} 
+                onClick={() => navigate(`/projects/${p.project_id}`)}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 cursor-pointer hover:border-blue-400 hover:shadow-md transition"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 truncate pr-2">{p.name}</h3>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${p.status === ProjectStatus.DRAFT ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                    {p.status.toUpperCase()}
+                  </span>
                 </div>
-                {dbBadge(health.database)}
-                <p className="text-slate-500 text-xs">v{health.version}</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p><span className="font-medium">Client:</span> {p.client_name || '—'}</p>
+                  <p><span className="font-medium">Material:</span> {p.material || '—'}</p>
+                  <p><span className="font-medium">Updated:</span> {new Date(p.created_at).toLocaleDateString()}</p>
+                </div>
               </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-red-400" />
-                <span className="text-red-400 text-sm">Unreachable</span>
-              </div>
-            )}
+            ))}
           </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-white mb-1">Generate Geometry</h2>
-          <p className="text-slate-400 text-sm">Choose a surface type to open the workspace.</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {quickShapes.map((s) => (
-            <Link
-              key={s.shape}
-              to={`/workspace?shape=${s.shape}`}
-              className="group bg-slate-900 border border-slate-800 rounded-xl p-5 text-center hover:border-violet-600 hover:bg-slate-800/70 transition-all duration-200 cursor-pointer"
-            >
-              <div className="text-3xl mb-3 text-slate-400 group-hover:text-violet-400 transition-colors">
-                {s.icon}
-              </div>
-              <p className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
-                {s.label}
-              </p>
-            </Link>
-          ))}
-        </div>
-
-        {/* Links */}
-        <div className="mt-8 flex gap-4">
-          <Link
-            to="/workspace"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-violet-500/20"
-          >
-            Open Workspace
-          </Link>
-        </div>
-      </div>
+        )}
+      </main>
     </div>
   );
 };

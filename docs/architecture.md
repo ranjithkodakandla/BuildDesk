@@ -597,5 +597,23 @@ Phase 4 closed the critical gaps identified in the Phase 3 output:
 - Replaced table-based part lists with scaled vector drawings.
 - Added visual edge differentiation.
 - Added visual cutouts, holes, and splashes.
-- Added a dedicated notes column and formal title block to the PDF layout.
-- The output now scores >70% match against real Canyon-style multifamily countertop fabrication packages.
+---
+
+## Frontend Architecture (Phase 5)
+
+### Project Authoring Workflow
+The React frontend has been strictly aligned to the multifamily fabrication domain. The generic "dashboard" and "shape drawing playground" concepts have been removed.
+
+The workflow centers around the **Project Workspace**:
+1. **Hierarchy & Units (`HierarchyPanel`)**: Users define Unit Types (e.g., "A1", "A1-MIR") and their associated physical units.
+2. **Assemblies (`AssembliesPanel` / `AssemblyEditor`)**: Users configure fabrication-aware assemblies (Kitchen, Vanity) and build out their physical `Parts` with exact dimensions, `Edges` (Polished, Miter, Raw), `Cutouts` (Sink, Cooktop), `Holes`, and `Splashes`.
+3. **Packages (`PackagesPanel`)**: Users trigger the generation of the multi-page PDF package, track its status, and download it.
+
+### UI Domain Mapping
+The frontend domain types strictly mirror the backend Pydantic models:
+- `src/types/hierarchy.ts` maps to `app.models.hierarchy`
+- `src/types/fabrication.ts` maps to `app.models.fabrication`
+- `src/types/packages.ts` maps to `app.models.project_package`
+
+### Live Preview Pipeline
+The frontend integrates seamlessly with the backend's `FabricationDrawingEngine` by embedding a live `<img>` tag that sources the `/assemblies/{id}/preview/svg` endpoint. As users modify dimensions or edges in the React forms, saving the assembly instantly regenerates the SVG preview, providing immediate visual feedback that matches the exact visual semantics of the final PDF package.

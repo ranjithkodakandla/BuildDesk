@@ -217,8 +217,18 @@ Corrected roadmap:
 - **SVG Preview:** Upgraded `AssemblySvgExporter` to precisely match the PDF drawing fidelity.
 - **Tests:** Confirmed 54 / 54 tests passing.
 
-Deferred (pending Phase 5):
-  □ Frontend realignment to fabrication workflow
-  □ Assembly thumbnail generation for type sheets
-  □ asyncpg migration
+### Phase 5: Frontend Realignment (✅ Complete)
+**Goal:** Replace generic frontend concepts with workflow-aligned multifamily project management.
+- **Project Workspace UI:** Replaced Dashboard with project-centric view (`DashboardPage.tsx`, `WorkspacePage.tsx`).
+- **Hierarchy Builder UI:** Added `HierarchyPanel.tsx` for Unit Types and Units management.
+- **Unit Type Management:** Support for unit type creation with variant tracking (MIRROR, ADA).
+- **Assembly Workspace:** Added `AssembliesPanel.tsx` and `AssemblyEditor.tsx` to configure assemblies, parts, edges.
+- **Live Visual Preview:** Integrated SVG preview into `AssemblyEditor.tsx` to reflect fabrication drawing semantics.
+- **Package Workflow UI:** Added `PackagesPanel.tsx` to generate packages, view status, and download PDFs.
+- **Types and API Clients:** Defined `hierarchy.ts`, `fabrication.ts`, `packages.ts` and added robust Axios clients for each domain.
+- **Frontend Tests:** Added frontend testing setup via Vitest.
+
+Deferred (pending Phase 6):
   □ Cloud Storage (GCS) for PDF persistence
+  □ asyncpg migration
+  □ Assembly thumbnail generation for type sheets
