@@ -182,6 +182,17 @@ class UnitBulkCreateResponse(BaseModel):
     units: List[UnitResponse]
 
 
+class UnitBulkUpdateRequest(BaseModel):
+    unit_ids:     List[uuid.UUID]     = Field(..., description="List of unit IDs to update")
+    building_id:  Optional[uuid.UUID] = Field(default=None)
+    floor_id:     Optional[uuid.UUID] = Field(default=None)
+    unit_type_id: Optional[uuid.UUID] = Field(default=None)
+    variant:      Optional[UnitVariantSchema] = Field(default=None)
+
+class UnitBulkUpdateResponse(BaseModel):
+    updated_count: int
+
+
 class UnitResponse(BaseModel):
     unit_id:      uuid.UUID
     project_id:   uuid.UUID

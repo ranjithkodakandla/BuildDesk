@@ -322,6 +322,55 @@ class ProjectHierarchyRepository:
         self.session.refresh(record)
         return _unit_from_record(record)
 
+    def delete_unit(self, tenant_id: uuid.UUID, unit_id: uuid.UUID) -> bool:
+        rec = self.session.query(UnitRecord).filter(
+            UnitRecord.id == str(unit_id), UnitRecord.tenant_id == str(tenant_id)
+        ).first()
+        if not rec:
+            return False
+        self.session.delete(rec)
+        self.session.commit()
+        return True
+
+    def bulk_update_units(
+        self, tenant_id: uuid.UUID, project_id: uuid.UUID,
+        unit_ids: List[uuid.UUID],
+        building_id: Optional[uuid.UUID] = None,
+        floor_id: Optional[uuid.UUID] = None,
+        unit_type_id: Optional[uuid.UUID] = None,
+        variant: Optional[str] = None
+    ) -> int:
+        from sqlalchemy import update
+        
+        updates = {}
+        if building_id is not None:
+            updates["building_id"] = str(building_id)
+        if floor_id is not None:
+            updates["floor_id"] = str(floor_id)
+        if unit_type_id is not None:
+            updates["unit_type_id"] = str(unit_type_id)
+        if variant is not None:
+            updates["variant"] = variant
+            
+        if not updates:
+            return 0
+            
+        updates["updated_at"] = _utcnow()
+            
+        stmt = (
+            update(UnitRecord)
+            .where(
+                UnitRecord.tenant_id == str(tenant_id),
+                UnitRecord.project_id == str(project_id),
+                UnitRecord.id.in_([str(uid) for uid in unit_ids])
+            )
+            .values(**updates)
+        )
+        
+        res = self.session.execute(stmt)
+        self.session.commit()
+        return res.rowcount
+
     def bulk_create_units(self, units: List[Unit]) -> List[Unit]:
         records = []
         for unit in units:

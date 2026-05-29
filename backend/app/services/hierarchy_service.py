@@ -338,6 +338,31 @@ class HierarchyService:
 
         return self._repo.bulk_create_units(units_to_create)
 
+    def bulk_update_units(
+        self,
+        tenant_id: uuid.UUID,
+        project_id: uuid.UUID,
+        unit_ids: List[uuid.UUID],
+        building_id: Optional[uuid.UUID] = None,
+        floor_id: Optional[uuid.UUID] = None,
+        unit_type_id: Optional[uuid.UUID] = None,
+        variant: Optional[UnitVariant] = None,
+    ) -> int:
+        self._require_project(tenant_id, project_id)
+        if building_id:
+            if not self._repo.get_building(tenant_id, building_id):
+                raise ValueError(f"Building {building_id} not found.")
+        if unit_type_id:
+            if not self._repo.get_unit_type(tenant_id, unit_type_id):
+                raise ValueError(f"UnitType {unit_type_id} not found.")
+
+        variant_val = variant.value if variant else None
+        return self._repo.bulk_update_units(
+            tenant_id, project_id, unit_ids,
+            building_id=building_id, floor_id=floor_id, 
+            unit_type_id=unit_type_id, variant=variant_val
+        )
+
     def list_units(self, tenant_id: uuid.UUID, project_id: uuid.UUID) -> List[Unit]:
         return self._repo.list_units(tenant_id, project_id)
 

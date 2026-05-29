@@ -25,6 +25,7 @@ from app.api.shapes import router as shapes_router
 from app.api.imports import router as imports_router
 from app.api.exports import router as exports_router
 from app.api.rfis import router as rfis_router
+from app.api.search import router as search_router
 from app.config import get_settings
 
 # ---------------------------------------------------------------------------
@@ -100,6 +101,8 @@ def create_app() -> FastAPI:
     application.include_router(exports_router,   prefix="/api/v1", tags=["exports"])
     # Phase 13: Operational Coordination (RFIs)
     application.include_router(rfis_router,      prefix="/api/v1", tags=["rfis"])
+    # Phase 14: Search
+    application.include_router(search_router,    prefix="/api/v1", tags=["search"])
     # Legacy geometry endpoints (deprecated, kept for backward compatibility)
     application.include_router(shapes_router,    prefix="/api/v1", tags=["shapes (legacy)"])
     application.include_router(geometry_router,  prefix="/api/v1", tags=["geometry (legacy)"])

@@ -33,6 +33,7 @@ from reportlab.pdfgen import canvas
 from app.exporters.fabrication_drawing_engine import FabricationDrawingEngine
 from app.models.fabrication import Assembly, Part
 from app.models.hierarchy import Project
+from app.models.tenant import Tenant
 from app.models.project_package import PackageSummary, UnitTypeGroup, ProjectPackage
 
 # ── Palette ──────────────────────────────────────────────────────────────────
@@ -81,10 +82,11 @@ class PackagePdfExporter:
     def export(
         self,
         project: Project,
+        package: ProjectPackage,
+        tenant: Tenant,
         unit_type_groups: List[UnitTypeGroup],
         assemblies_by_type: Dict[str, List[Assembly]],
-        summary: PackageSummary,
-        package: ProjectPackage,
+        summary: PackageSummary
     ) -> bytes:
         # Pre-compute total pages: 1 cover + 1 TOC + per group (1 type + N asm) + 1 summary
         tp = 2
@@ -101,7 +103,7 @@ class PackagePdfExporter:
         # Gather TOC items
         toc_items = []
 
-        self._draw_cover(c, project, package, summary)
+        self._draw_cover(c, project, package, tenant, summary)
         c.showPage()
         
         toc_items.append(("Cover Sheet", 1))
@@ -119,7 +121,7 @@ class PackagePdfExporter:
                 current_page += 1
         toc_items.append(("Project Summary", current_page))
         
-        self._draw_toc(c, project, package.version, toc_items)
+        self._draw_toc(c, project, package.version, tenant, toc_items)
         c.showPage()
 
         for group in unit_type_groups:
@@ -129,16 +131,16 @@ class PackagePdfExporter:
                 key = f"{group.unit_type_id}::{atype}"
                 group_assemblies.extend(assemblies_by_type.get(key, []))
 
-            self._draw_type_sheet(c, project, group, group_assemblies)
+            self._draw_type_sheet(c, project, group, group_assemblies, tenant)
             c.showPage()
 
             for atype in group.assembly_types:
                 key = f"{group.unit_type_id}::{atype}"
                 asms = assemblies_by_type.get(key, [])
-                self._draw_assembly_page(c, project, group, atype, asms, package.version)
+                self._draw_assembly_page(c, project, group, atype, asms, package.version, tenant)
                 c.showPage()
 
-        self._draw_summary(c, project, summary, package.version)
+        self._draw_summary(c, project, summary, package.version, tenant)
         c.showPage()
 
         c.save()
@@ -146,7 +148,7 @@ class PackagePdfExporter:
 
     # ── Cover ─────────────────────────────────────────────────────────────────
 
-    def _draw_cover(self, c, project: Project, package: ProjectPackage, summary: PackageSummary):
+    def _draw_cover(self, c, project: Project, package: ProjectPackage, tenant: Tenant, summary: PackageSummary):
         self._page_num += 1
         # Dark header band
         c.setFillColor(_C_DARK)
@@ -154,7 +156,8 @@ class PackagePdfExporter:
 
         c.setFillColor(_C_MID)
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(_M, _H - _M - 4, "BUILDDESK  ·  FABRICATION DRAWING PACKAGE")
+        co_name = (tenant.company_name or "BUILDDESK").upper()
+        c.drawString(_M, _H - _M - 4, f"{co_name}  ·  FABRICATION DRAWING PACKAGE")
 
         c.setFillColor(_C_WHITE)
         c.setFont("Helvetica-Bold", 26)
@@ -224,7 +227,7 @@ class PackagePdfExporter:
         c.drawString(_M, notes_y, "STANDARD FABRICATION & INSTALLATION NOTES:")
         c.setFont("Helvetica", 8)
         c.setFillColor(_C_GREY)
-        std_notes = [
+        std_notes = tenant.standard_notes.split("\n") if tenant.standard_notes else [
             "1. Field verify all dimensions prior to fabrication.",
             "2. Ensure all substrate surfaces are level and capable of supporting countertop weight.",
             "3. Seam locations shown are suggested; actual locations to be determined by fabricator based on slab sizes.",
@@ -234,16 +237,15 @@ class PackagePdfExporter:
         ]
         ny = notes_y - 0.25 * inch
         for note in std_notes:
-            c.drawString(_M + 0.1 * inch, ny, note)
-            ny -= 0.2 * inch
+            if note.strip():
+                c.drawString(_M + 0.1 * inch, ny, note.strip())
+                ny -= 0.2 * inch
 
-        self._footer(c, project.name, package.version)
-
-        self._footer(c, project.name, package.version)
+        self._footer(c, project.name, package.version, tenant)
 
     # ── Table of Contents ─────────────────────────────────────────────────────
 
-    def _draw_toc(self, c, project: Project, version: str, items: List[tuple[str, int]]):
+    def _draw_toc(self, c, project: Project, version: str, tenant: Tenant, items: List[tuple[str, int]]):
         self._page_num += 1
         
         # Header
@@ -285,13 +287,13 @@ class PackagePdfExporter:
             
             y -= 0.25 * inch
             
-        self._footer(c, project.name, version)
+        self._footer(c, project.name, version, tenant)
 
     # ── Type Sheet ────────────────────────────────────────────────────────────
 
     def _draw_type_sheet(
         self, c, project: Project,
-        group: UnitTypeGroup, assemblies: List[Assembly]
+        group: UnitTypeGroup, assemblies: List[Assembly], tenant: Tenant = None
     ):
         self._page_num += 1
         self._page_header(c, project,
@@ -366,14 +368,17 @@ class PackagePdfExporter:
             c.setFillColor(_C_GREY)
             c.drawString(_M + 8, y, "No assemblies assigned yet.")
 
-        self._footer(c, project.name, "")
+        if tenant:
+            self._footer(c, project.name, "—", tenant)
+        else:
+            self._footer(c, project.name, "—")
 
     # ── Assembly Drawing Page ─────────────────────────────────────────────────
 
     def _draw_assembly_page(
         self, c, project: Project,
         group: UnitTypeGroup, assembly_type: str,
-        assemblies: List[Assembly], version: str,
+        assemblies: List[Assembly], version: str, tenant: Tenant
     ):
         self._page_num += 1
         label = assembly_type.replace("_", " ").title()
@@ -393,7 +398,7 @@ class PackagePdfExporter:
             c.setFillColor(_C_GREY)
             c.drawString(_M, body_top - 0.3 * inch,
                          f"No assemblies of type '{label}' defined for this unit type.")
-            self._footer(c, project.name, version)
+            self._footer(c, project.name, version, tenant)
             return
 
         asm = assemblies[0]   # representative assembly
@@ -446,7 +451,7 @@ class PackagePdfExporter:
         notes_y = body_top
         notes_y = self._draw_notes_column(c, asm, notes_y, draw_zone_h)
 
-        self._footer(c, project.name, version)
+        self._footer(c, project.name, version, tenant)
 
     def _draw_notes_column(
         self, c, asm: Assembly, top_y: float, avail_h: float
@@ -596,7 +601,7 @@ class PackagePdfExporter:
 
     # ── Summary ───────────────────────────────────────────────────────────────
 
-    def _draw_summary(self, c, project: Project, summary: PackageSummary, version: str):
+    def _draw_summary(self, c, project: Project, summary: PackageSummary, version: str, tenant: Tenant):
         self._page_num += 1
         self._page_header(c, project, "PROJECT SUMMARY", version)
         y = _H - _HEADER_H - _M * 0.5
@@ -646,7 +651,7 @@ class PackagePdfExporter:
                 c.drawString(cx + 5, ry, f"·  {label}: {cnt}")
                 ry -= 0.18 * inch
 
-        self._footer(c, project.name, version)
+        self._footer(c, project.name, version, tenant)
 
     # ── Shared helpers ────────────────────────────────────────────────────────
 
@@ -673,14 +678,23 @@ class PackagePdfExporter:
         c.setLineWidth(0.5)
         c.line(_M, _H - _HEADER_H + 1, _W - _M, _H - _HEADER_H + 1)
 
-    def _footer(self, c, project_name: str, version: str):
+    def _footer(self, c, project_name: str, version: str, tenant: Tenant = None):
         c.setStrokeColor(HexColor("#cccccc"))
         c.setLineWidth(0.5)
         c.line(_M, _M + 0.2 * inch, _W - _M, _M + 0.2 * inch)
         c.setFont("Helvetica", 6.5)
         c.setFillColor(_C_GREY)
+        
+        co_name = "BuildDesk"
+        footer_text = "CONFIDENTIAL AND PROPRIETARY"
+        if tenant:
+            if tenant.company_name:
+                co_name = tenant.company_name
+            if tenant.default_footer:
+                footer_text = tenant.default_footer
+        
         c.drawString(_M, _M + 0.05 * inch,
-                     f"BuildDesk  ·  {project_name}  ·  CONFIDENTIAL")
+                     f"{co_name}  ·  {project_name}  ·  {footer_text}")
         if version:
             c.drawRightString(_W - _M, _M + 0.05 * inch, f"Rev: {version}")
         c.drawCentredString(_W / 2, _M + 0.05 * inch,

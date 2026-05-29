@@ -64,6 +64,12 @@ class Tenant(BaseDomainModel):
     contact_email: EmailStr = Field(..., description="Primary contact email for the tenant")
     plan: TenantPlan = Field(default=TenantPlan.trial)
     status: TenantStatus = Field(default=TenantStatus.active)
+    
+    # Phase 14: Tenant Profile & Customization
+    company_name: Optional[str] = Field(default=None, description="Company name displayed on PDFs")
+    logo_url: Optional[str] = Field(default=None, description="URL or data URI for the company logo")
+    default_footer: Optional[str] = Field(default=None, description="Default footer string for generated PDFs")
+    standard_notes: Optional[str] = Field(default=None, description="Default fabrication standard notes")
 
     # Future StoneDesk interoperability: external tenant mapping
     stonedesk_tenant_id: Optional[uuid.UUID] = Field(

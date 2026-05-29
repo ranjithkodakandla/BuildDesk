@@ -43,6 +43,13 @@ class TenantRecord(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name: Mapped[str] = mapped_column(String(255))
+    
+    # Phase 14: Tenant Profile & Customization
+    company_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    logo_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    default_footer: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    standard_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

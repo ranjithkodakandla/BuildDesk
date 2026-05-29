@@ -83,13 +83,22 @@ class SQLTenantRepository:
         self.session = session
 
     def save(self, tenant: Tenant) -> None:
-        existing = self.session.query(TenantRecord).filter(TenantRecord.id == str(tenant.id)).first()
+        tid = str(tenant.tenant_id)
+        existing = self.session.query(TenantRecord).filter(TenantRecord.id == tid).first()
         if existing:
             existing.name = tenant.name
+            existing.company_name = tenant.company_name
+            existing.logo_url = tenant.logo_url
+            existing.default_footer = tenant.default_footer
+            existing.standard_notes = tenant.standard_notes
         else:
             record = TenantRecord(
-                id=str(tenant.id),
-                name=tenant.name
+                id=tid,
+                name=tenant.name,
+                company_name=tenant.company_name,
+                logo_url=tenant.logo_url,
+                default_footer=tenant.default_footer,
+                standard_notes=tenant.standard_notes
             )
             self.session.add(record)
         self.session.commit()
@@ -98,4 +107,13 @@ class SQLTenantRepository:
         record = self.session.query(TenantRecord).filter(TenantRecord.id == str(tenant_id)).first()
         if not record:
             return None
-        return Tenant(id=uuid.UUID(record.id), name=record.name)
+        return Tenant(
+            tenant_id=uuid.UUID(record.id),
+            name=record.name,
+            slug=record.name.lower().replace(" ", "-"),
+            contact_email="admin@example.com",
+            company_name=record.company_name,
+            logo_url=record.logo_url,
+            default_footer=record.default_footer,
+            standard_notes=record.standard_notes
+        )

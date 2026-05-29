@@ -12,6 +12,7 @@ from app.models.project_package import ProjectPackageStatus
 from app.repositories.fabrication_repository import FabricationRepository
 from app.repositories.hierarchy_repository import ProjectHierarchyRepository
 from app.repositories.package_repository import PackageRepository
+from app.repositories.sqlalchemy_repo import SQLTenantRepository
 from app.services.package_generator_service import PackageGeneratorService
 from app.services.cloud_storage import CloudStorageService
 from app.exporters.package_pdf_exporter import PackagePdfExporter
@@ -33,6 +34,7 @@ def generate_pdf_background(
         fab_repo = FabricationRepository(db)
         svc = PackageGeneratorService(db)
         pkg_repo = PackageRepository(db)
+        tenant_repo = SQLTenantRepository(db)
         storage_svc = CloudStorageService()
 
         # Update status to generating
@@ -46,10 +48,14 @@ def generate_pdf_background(
             db_record.status = ProjectPackageStatus.GENERATING.value
             db.commit()
 
-        # 1. Load project
+        # 1. Load project and tenant
         project = hierarchy_repo.get_project(tenant_id, project_id)
         if not project:
             raise ValueError("Project not found.")
+            
+        tenant = tenant_repo.get_by_id(tenant_id)
+        if not tenant:
+            raise ValueError("Tenant not found.")
 
         # 2. Build UnitTypeGroups and assemblies map for the exporter
         groups = svc.get_unit_type_groups(tenant_id, project_id)
@@ -70,6 +76,7 @@ def generate_pdf_background(
         pdf_bytes = exporter.export(
             project=project,
             package=db_package,
+            tenant=tenant,
             unit_type_groups=groups,
             assemblies_by_type=assemblies_by_type,
             summary=summary,

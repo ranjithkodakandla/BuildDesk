@@ -421,6 +421,31 @@ def bulk_add_units(
     )
 
 
+from app.api.hierarchy_schemas import UnitBulkUpdateRequest, UnitBulkUpdateResponse
+
+@router.put("/{project_id}/units/bulk", response_model=UnitBulkUpdateResponse, status_code=200)
+def bulk_update_units(
+    project_id: uuid.UUID,
+    body: UnitBulkUpdateRequest,
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
+    _user: User = Depends(require_active_user),
+    svc: HierarchyService = Depends(get_hierarchy_service),
+):
+    try:
+        updated = svc.bulk_update_units(
+            tenant_id=tenant_id,
+            project_id=project_id,
+            unit_ids=body.unit_ids,
+            building_id=body.building_id,
+            floor_id=body.floor_id,
+            unit_type_id=body.unit_type_id,
+            variant=UnitVariant(body.variant.value) if body.variant else None,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return UnitBulkUpdateResponse(updated_count=updated)
+
+
 @router.get("/{project_id}/units", response_model=UnitListResponse)
 def list_units(
     project_id: uuid.UUID,
