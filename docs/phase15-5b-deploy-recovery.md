@@ -4,7 +4,14 @@
 **GCP project:** `stonedesk-app`  
 **Cloud Run service:** `builddesk-api` (`us-central1`)  
 **Cloud SQL instance:** `stonedesk-app:us-central1:builddesk-db`  
-**Service URL:** `https://builddesk-api-149130710868.us-central1.run.app`
+**Service URL:** `https://builddesk-api-149130710868.us-central1.run.app`  
+**Current revision (15.5d):** `builddesk-api-00015-jv4` — full staging **11/11 PASS**
+
+### Package manifest FK (if generate returns 500)
+
+Symptom: `IntegrityError` / `package_pages_package_id_fkey` on `POST .../package/generate` with large page manifests.
+
+Fix: `session.flush()` in `PackageRepository.save_package()` after updating `project_packages`, before inserting `package_pages`. Included in revision `00015-jv4`.
 
 ---
 

@@ -787,9 +787,10 @@ Phase 14.5 closed the loop between tenant profile configuration and issued-packa
 - **Tenant safety:** Import/export routes validate `project_id` path matches job ownership; hierarchy and repository layers continue to scope by `tenant_id`.
 - **Deployment checks:** `validate_deployment_readiness.py` verifies Alembic head, DB connectivity, and environment flags locally; GCS/Cloud Run validation documented for live environments.
 
-### Live Staging Validation (Phase 15.5)
+### Live Staging Validation (Phase 15.5 / 15.5d)
 
-- **Staging runner:** `run_staging_validation.py` exercises the deployed API via httpx (auth → hierarchy → 200-unit bulk → package → exports → RFI/approval).
-- **Tenant bootstrap:** Register must create a `tenants` row before `users` insert when using Cloud SQL FKs (`auth.py` `_ensure_tenant_exists`).
-- **Live baseline URL:** Documented in `frontend/.env` and `docs/gcp-live-notes.md` (Cloud Run `us-central1`).
-- **Artifact durability:** Production requires GCS (`USE_LOCAL_STORAGE=false`); current Cloud Run revision may still use container-local PDF paths unless redeployed with storage work.
+- **Staging runner:** `run_staging_validation.py` exercises the deployed API via httpx (auth → hierarchy → 200-unit bulk → package → exports → RFI/approval). Phase 15.5d: **11/11 PASS** on revision `builddesk-api-00015-jv4`.
+- **Tenant bootstrap:** Register must create a `tenants` row before `users` insert when using Cloud SQL FKs (`auth.py` `_ensure_tenant_exists`). Live register returns **201 + JWT**.
+- **Package manifest persistence:** `PackageRepository.save_package()` must `flush()` the parent `project_packages` row before bulk-inserting `package_pages` (FK ordering on large manifests).
+- **Live baseline URL:** `https://builddesk-api-149130710868.us-central1.run.app` (also `docs/gcp-live-notes.md`).
+- **Artifact durability:** Production requires GCS (`USE_LOCAL_STORAGE=false`); current revision uses `USE_LOCAL_STORAGE=true` and container-local `mock_gcs` paths (ephemeral). See `docs/phase15-5d-live-deployment-report.md`.

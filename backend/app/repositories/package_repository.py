@@ -86,6 +86,8 @@ class PackageRepository:
         r.generation_attempts = package.generation_attempts
         r.page_count = package.page_count
         r.updated_at = _utcnow()
+        # Flush parent row before child package_pages inserts (FK on large manifests).
+        self.session.flush()
         self.session.query(PackagePageRecord).filter(
             PackagePageRecord.package_id == pkg_str_id
         ).delete(synchronize_session=False)
