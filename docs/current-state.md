@@ -111,6 +111,15 @@ Completed:
   ✓ Makefile extended with deploy-cloudsql command
   ✓ Architecture updated to reflect Secret Manager usage and durable persistence
 
+✓ Live Cloud SQL Deployment Validation
+  ✓ Cloud SQL instance `builddesk-db` and database provisioned
+  ✓ Application database user and password generated
+  ✓ Secret Manager updated with BUILDDESK_DATABASE_URL
+  ✓ Cloud SQL Proxy used for local Alembic migrations
+  ✓ Live Cloud Run deployment successfully validated with durable PostgreSQL storage
+  ✓ Validated persistence across container redeployments
+  ✓ Validated tenant isolation and export capabilities with the live database
+
 Total smoke tests: 110 / 110 passing.
 
 Next:
