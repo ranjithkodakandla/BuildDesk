@@ -179,6 +179,7 @@ class UnitRecord(Base):
     code: Mapped[str] = mapped_column(String(50), nullable=False)
     # MIR, ADA, LEFT, RIGHT, REV, CUSTOM, standard
     variant: Mapped[str] = mapped_column(String(20), nullable=False, default="standard")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

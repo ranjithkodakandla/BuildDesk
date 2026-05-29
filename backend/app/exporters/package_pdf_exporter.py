@@ -169,6 +169,18 @@ class PackagePdfExporter:
         self._badge(c, bx, _H - 1.0 * inch,
                     f"{self._total_pages} Sheets", HexColor("#2c3e50"))
 
+        if tenant.logo_url:
+            logo_x = _W - 3.0 * inch
+            logo_y = _H - 1.65 * inch
+            c.setStrokeColor(_C_MID)
+            c.setLineWidth(0.8)
+            c.roundRect(logo_x, logo_y, 1.15 * inch, 0.42 * inch, 3, stroke=1, fill=0)
+            c.setFillColor(_C_WHITE)
+            c.setFont("Helvetica-Bold", 7)
+            c.drawCentredString(logo_x + 0.575 * inch, logo_y + 0.25 * inch, "LOGO")
+            c.setFont("Helvetica", 5.5)
+            c.drawCentredString(logo_x + 0.575 * inch, logo_y + 0.11 * inch, "configured")
+
         # Metadata table (left column)
         meta = [
             ("Project",     project.name),

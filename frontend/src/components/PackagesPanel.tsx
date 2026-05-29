@@ -37,13 +37,15 @@ export const PackagesPanel: React.FC<Props> = ({ project }) => {
   }, [project.project_id]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (pkg?.status === ProjectPackageStatus.GENERATING) {
       interval = setInterval(() => {
         loadStatus();
       }, 2000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [pkg?.status]);
 
   const handleGenerate = async () => {

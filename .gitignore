@@ -74,3 +74,6 @@ outputs/
 # Generated test artifacts
 backend/tests/output/
 backend/builddesk.db
+
+# runtime export artifacts
+backend/artifacts/exports/

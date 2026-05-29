@@ -27,6 +27,7 @@ from app.models.hierarchy import (
     Project,
     ProjectStatus,
     Unit,
+    UnitStatus,
     UnitType,
     UnitVariant,
 )
@@ -347,20 +348,30 @@ class HierarchyService:
         floor_id: Optional[uuid.UUID] = None,
         unit_type_id: Optional[uuid.UUID] = None,
         variant: Optional[UnitVariant] = None,
+        status: Optional[UnitStatus] = None,
     ) -> int:
         self._require_project(tenant_id, project_id)
+        if not unit_ids:
+            raise ValueError("At least one unit_id is required.")
         if building_id:
             if not self._repo.get_building(tenant_id, building_id):
                 raise ValueError(f"Building {building_id} not found.")
+        if floor_id:
+            floor = self._repo.get_floor(tenant_id, floor_id)
+            if not floor:
+                raise ValueError(f"Floor {floor_id} not found.")
+            if building_id and floor.building_id != building_id:
+                raise ValueError("floor_id must belong to building_id.")
         if unit_type_id:
             if not self._repo.get_unit_type(tenant_id, unit_type_id):
                 raise ValueError(f"UnitType {unit_type_id} not found.")
 
         variant_val = variant.value if variant else None
+        status_val = status.value if status else None
         return self._repo.bulk_update_units(
             tenant_id, project_id, unit_ids,
             building_id=building_id, floor_id=floor_id, 
-            unit_type_id=unit_type_id, variant=variant_val
+            unit_type_id=unit_type_id, variant=variant_val, status=status_val,
         )
 
     def list_units(self, tenant_id: uuid.UUID, project_id: uuid.UUID) -> List[Unit]:

@@ -1,8 +1,8 @@
 export enum ProjectStatus {
   DRAFT = 'draft',
-  ACTIVE = 'active',
-  COMPLETED = 'completed',
-  ON_HOLD = 'on_hold',
+  IN_PROGRESS = 'in_progress',
+  ISSUED = 'issued',
+  ARCHIVED = 'archived',
 }
 
 export interface HierarchyConfig {
@@ -38,11 +38,17 @@ export interface UnitType {
 
 export enum UnitVariant {
   STANDARD = 'standard',
-  MIRROR = 'mirror',
-  ADA = 'ada',
-  LEFT = 'left',
-  RIGHT = 'right',
+  MIRROR = 'MIR',
+  ADA = 'ADA',
+  LEFT = 'LEFT',
+  RIGHT = 'RIGHT',
+  REVERSED = 'REV',
   CUSTOM = 'custom',
+}
+
+export enum UnitStatus {
+  ACTIVE = 'active',
+  ARCHIVED = 'archived',
 }
 
 export interface Unit {
@@ -54,6 +60,7 @@ export interface Unit {
   name: string;
   code: string;
   variant: UnitVariant;
+  status: UnitStatus;
   notes?: string;
   sort_order: number;
 }

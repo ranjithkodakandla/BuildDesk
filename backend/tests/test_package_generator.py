@@ -9,6 +9,7 @@ Expected after: 142 + 30 new = 172 / 172 passing.
 """
 
 import uuid
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -28,6 +29,7 @@ from app.models.project_package import (
     PackagePageType, PackageSummary, ProjectPackage,
     ProjectPackageStatus, UnitTypeGroup,
 )
+from app.models.tenant import Tenant
 from app.services.package_generator_service import PackageGeneratorService
 
 
@@ -334,6 +336,27 @@ class TestSummaryComputation:
 
 class TestPackagePdfExporter:
 
+    def _package(self, project: Project, version: str = "1.0") -> ProjectPackage:
+        return ProjectPackage(
+            project_id=project.project_id,
+            tenant_id=project.tenant_id,
+            version=version,
+            status=ProjectPackageStatus.READY,
+            generated_at=datetime.now(timezone.utc),
+        )
+
+    def _tenant(self, project: Project) -> Tenant:
+        return Tenant(
+            tenant_id=project.tenant_id,
+            name="Canyon Surfaces",
+            slug="canyon-surfaces",
+            contact_email="ops@example.com",
+            company_name="Canyon Surfaces",
+            logo_url="placeholder://logo",
+            default_footer="FIELD VERIFY ALL DIMENSIONS",
+            standard_notes="Confirm slab direction\nVerify sink templates",
+        )
+
     def _build_export_args(self):
         project = _project()
         ut_a = _unit_type("A")
@@ -357,14 +380,14 @@ class TestPackagePdfExporter:
     def test_pdf_bytes_returned(self):
         project, groups, asm_map, summary = self._build_export_args()
         exporter = PackagePdfExporter()
-        pdf = exporter.export(project, groups, asm_map, summary, version="1.0")
+        pdf = exporter.export(project, self._package(project), self._tenant(project), groups, asm_map, summary)
         assert isinstance(pdf, bytes)
         assert len(pdf) > 0
 
     def test_pdf_has_valid_header(self):
         project, groups, asm_map, summary = self._build_export_args()
         exporter = PackagePdfExporter()
-        pdf = exporter.export(project, groups, asm_map, summary)
+        pdf = exporter.export(project, self._package(project), self._tenant(project), groups, asm_map, summary)
         assert pdf[:4] == b"%PDF"
 
     def test_pdf_grows_with_more_unit_types(self):
@@ -392,9 +415,36 @@ class TestPackagePdfExporter:
         }
 
         ex = PackagePdfExporter()
-        pdf_two = ex.export(project, [g_a, g_b], asm_map, summary)
-        pdf_one = ex.export(project, [g_a], {f"{ut_a.unit_type_id}::kitchen": [asm_a]}, summary)
+        pdf_two = ex.export(project, self._package(project), self._tenant(project), [g_a, g_b], asm_map, summary)
+        pdf_one = ex.export(
+            project,
+            self._package(project),
+            self._tenant(project),
+            [g_a],
+            {f"{ut_a.unit_type_id}::kitchen": [asm_a]},
+            summary,
+        )
         assert len(pdf_two) > len(pdf_one)
+
+    def test_pdf_footer_uses_tenant_profile(self):
+        project, _, _, _ = self._build_export_args()
+        exporter = PackagePdfExporter()
+        captured: list[str] = []
+
+        class FakeCanvas:
+            def setStrokeColor(self, *_): pass
+            def setLineWidth(self, *_): pass
+            def line(self, *_): pass
+            def setFont(self, *_): pass
+            def setFillColor(self, *_): pass
+            def drawString(self, *_args):
+                captured.append(str(_args[-1]))
+            def drawRightString(self, *_): pass
+            def drawCentredString(self, *_): pass
+
+        exporter._footer(FakeCanvas(), project.name, "Rev A", self._tenant(project))
+        assert any("Canyon Surfaces" in text for text in captured)
+        assert any("FIELD VERIFY ALL DIMENSIONS" in text for text in captured)
 
 
 # ===========================================================================

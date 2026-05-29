@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { projectsApi } from '../api/projects';
 import { Project } from '../types/hierarchy';
-import { useAuthStore } from '../store/authStore';
 import { HierarchyPanel } from '../components/HierarchyPanel';
 import { AssembliesPanel } from '../components/AssembliesPanel';
 import { PackagesPanel } from '../components/PackagesPanel';
 import ExportModal from '../components/ExportModal';
+import { SearchPanel } from '../components/SearchPanel';
 
 export const WorkspacePage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
-  const [activeTab, setActiveTab] = useState<'hierarchy' | 'assemblies' | 'packages'>('assemblies');
+  const [activeTab, setActiveTab] = useState<'hierarchy' | 'assemblies' | 'packages' | 'search'>('assemblies');
   const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export const WorkspacePage: React.FC = () => {
 
       <div className="bg-white border-b border-gray-200 px-6">
         <nav className="flex space-x-8">
-          {(['hierarchy', 'assemblies', 'packages'] as const).map(tab => (
+          {(['hierarchy', 'assemblies', 'packages', 'search'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -63,6 +63,7 @@ export const WorkspacePage: React.FC = () => {
         {activeTab === 'hierarchy' && <HierarchyPanel project={project} />}
         {activeTab === 'assemblies' && <AssembliesPanel project={project} />}
         {activeTab === 'packages' && <PackagesPanel project={project} />}
+        {activeTab === 'search' && <SearchPanel projectId={project.project_id} />}
       </main>
       
       {showExportModal && (

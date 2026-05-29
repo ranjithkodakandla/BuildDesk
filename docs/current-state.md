@@ -293,6 +293,16 @@ Corrected roadmap:
 - **PDF Visibility:** Modified the PDF Exporter Cover Sheet to dynamically output Project Status, Package Status, Approved By, and Approved At to ensure physical blueprints reflect the latest operational truths.
 - **Pilot Revalidation:** Extended `run_pilot_workflow.py` to seamlessly simulate generating a package, submitting it, rejecting it for clarification, raising an RFI, answering the RFI, regenerating the package, and finally approving the revision.
 
+### Phase 14: Configurable Tenant Profiles & Advanced Search (✅ Complete)
+**Goal:** Improve operational scalability for large multifamily countertop programs without changing the fabrication roadmap.
+- **Tenant Profile Foundation:** Added tenant-level company name, logo placeholder URL, default PDF footer, and standard fabrication notes. Exposed `GET/PUT /api/v1/tenant/profile`.
+- **PDF Branding Integration:** `PackagePdfExporter` now consumes tenant profile metadata for cover branding, logo placeholder rendering, standard notes, and footer text.
+- **Advanced Search Layer:** Completed `POST /api/v1/search` across projects, units, assemblies, packages, and RFIs with tenant isolation plus status, project, building, floor, unit type, assembly type, and date filters.
+- **Bulk Workflow Layer:** Added unit lifecycle status and expanded bulk unit updates to support type assignment, variant assignment, and archive/reactivation workflows at multifamily scale.
+- **Operational Frontend:** Added dashboard search, saved filters, operational queues for open RFIs and packages awaiting approval, tenant settings, project-scoped search, and bulk unit controls in the hierarchy workspace.
+- **Migration State:** Alembic head is `7e84f9a21c30` after tenant branding fields and unit status additions.
+- **Validation:** Backend `63 / 63` passing; frontend `17 / 17` passing; frontend production build succeeds.
+
 Deferred:
   □ Complex BI Dashboards
   □ StoneDesk integration

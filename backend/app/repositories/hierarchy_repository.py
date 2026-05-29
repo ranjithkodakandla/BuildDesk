@@ -30,6 +30,7 @@ from app.models.hierarchy import (
     Project,
     ProjectStatus,
     Unit,
+    UnitStatus,
     UnitType,
     UnitVariant,
 )
@@ -120,6 +121,7 @@ def _unit_from_record(r: UnitRecord) -> Unit:
         name=r.name,
         code=r.code,
         variant=UnitVariant(r.variant) if r.variant else UnitVariant.STANDARD,
+        status=UnitStatus(getattr(r, "status", None) or UnitStatus.ACTIVE.value),
         notes=r.notes,
         sort_order=r.sort_order,
         created_at=r.created_at,
@@ -312,6 +314,7 @@ class ProjectHierarchyRepository:
             name=unit.name,
             code=unit.code,
             variant=unit.variant.value,
+            status=unit.status.value,
             notes=unit.notes,
             sort_order=unit.sort_order,
             created_at=_utcnow(),
@@ -338,7 +341,8 @@ class ProjectHierarchyRepository:
         building_id: Optional[uuid.UUID] = None,
         floor_id: Optional[uuid.UUID] = None,
         unit_type_id: Optional[uuid.UUID] = None,
-        variant: Optional[str] = None
+        variant: Optional[str] = None,
+        status: Optional[str] = None,
     ) -> int:
         from sqlalchemy import update
         
@@ -351,6 +355,8 @@ class ProjectHierarchyRepository:
             updates["unit_type_id"] = str(unit_type_id)
         if variant is not None:
             updates["variant"] = variant
+        if status is not None:
+            updates["status"] = status
             
         if not updates:
             return 0
@@ -384,6 +390,7 @@ class ProjectHierarchyRepository:
                 name=unit.name,
                 code=unit.code,
                 variant=unit.variant.value,
+                status=unit.status.value,
                 notes=unit.notes,
                 sort_order=unit.sort_order,
                 created_at=_utcnow(),

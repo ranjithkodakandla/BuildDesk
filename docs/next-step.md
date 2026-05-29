@@ -8,33 +8,34 @@
 
 | Field              | Value                                  |
 |--------------------|----------------------------------------|
-| Last completed phase | Phase 13 — Operational Coordination Layer |
-| Git branch         | `feat/phase-13-operational-coordination` |
-| Test baseline      | Passing backend, frontend compiled |
-| Migration state    | Up to date |
+| Last completed phase | Phase 14 — Configurable Tenant Profiles & Advanced Search |
+| Git branch         | `phase14-recovery` |
+| Test baseline      | Backend passing, frontend tests passing, frontend compiled |
+| Migration state    | Up to date at `7e84f9a21c30` |
 
 ---
 
 ## Immediate Next Milestone
 
-**Phase 14 — Configurable Tenant Profiles & Advanced Search**
+**Phase 15 — Production Launch Hardening**
 
-The system is ready to proceed to Phase 14.
+Phase 14 is recovered and stable. The system now supports tenant profile configuration, advanced operational search, bulk unit workflow updates, dashboard queues, and tenant-aware PDF rendering.
 
-### Next Execution Target: Phase 14 — Configurable Tenant Profiles
+### Next Execution Target: Phase 15 — Launch Hardening
 
-With the operational layer now successfully implemented (approval workflows, RFIs), the platform is nearly ready for initial launch. The final missing piece is allowing organizations to customize their workspace.
+Focus on launch readiness, not new product surface area.
 
-**Key Objectives for Phase 14:**
-1. **Tenant Configuration:** Extract hardcoded SaaS variables (like branding logos, company name, default PDF footers, and standard fabrication notes) into a configurable `TenantProfile`.
-2. **Advanced Search Filters:** Implement robust filtering for the project dashboard (e.g. filter by operational status, client, or issue date).
-3. **Operational Dashboards:** Provide a high-level view of pending RFIs and packages awaiting approval.
+**Key Objectives for Phase 15:**
+1. **Operational Reliability:** Harden background package generation failure handling, storage cleanup, and retry visibility.
+2. **Security & Tenant Safety:** Review auth edge cases, route permissions, and tenant-scoped query coverage.
+3. **Deployment Readiness:** Revalidate Cloud Run + Cloud SQL migrations and artifact storage configuration against the recovered Phase 14 schema.
 
 **Required Verification:**
-- Validate that a generated PDF automatically adopts the custom branding settings defined by the tenant.
+- Run backend tests, frontend tests, frontend build, and migration upgrade on a clean database.
+- Validate a generated PDF uses tenant profile metadata.
 
 ---
 
 ## Pending Blockers
 
-- None currently blocking Phase 14.
+- None currently blocking Phase 15.

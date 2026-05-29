@@ -9,6 +9,7 @@ from typing import Dict, List
 from app.db.session import SessionLocal
 from app.models.fabrication import Assembly
 from app.models.project_package import ProjectPackageStatus
+from app.models.tenant import Tenant
 from app.repositories.fabrication_repository import FabricationRepository
 from app.repositories.hierarchy_repository import ProjectHierarchyRepository
 from app.repositories.package_repository import PackageRepository
@@ -55,7 +56,13 @@ def generate_pdf_background(
             
         tenant = tenant_repo.get_by_id(tenant_id)
         if not tenant:
-            raise ValueError("Tenant not found.")
+            tenant = Tenant(
+                tenant_id=tenant_id,
+                name="BuildDesk Tenant",
+                slug=f"tenant-{str(tenant_id)[:8]}",
+                contact_email="ops@builddesk.local",
+            )
+            tenant_repo.save(tenant)
 
         # 2. Build UnitTypeGroups and assemblies map for the exporter
         groups = svc.get_unit_type_groups(tenant_id, project_id)

@@ -55,6 +55,7 @@ from app.api.hierarchy_schemas import (
 from app.auth.dependencies import get_current_tenant, require_active_user
 from app.dependencies import get_db
 from app.models.hierarchy import UnitVariant
+from app.models.hierarchy import UnitStatus
 from app.models.user import User
 from app.repositories.hierarchy_repository import ProjectHierarchyRepository
 from app.services.hierarchy_service import HierarchyService, ProjectTree
@@ -144,6 +145,7 @@ def _unit_response(u) -> UnitResponse:
         floor_id=u.floor_id,
         unit_type_id=u.unit_type_id,
         variant=u.variant.value if hasattr(u.variant, "value") else str(u.variant),
+        status=u.status.value if hasattr(u.status, "value") else str(u.status),
         notes=u.notes,
         sort_order=u.sort_order,
         created_at=u.created_at,
@@ -440,6 +442,7 @@ def bulk_update_units(
             floor_id=body.floor_id,
             unit_type_id=body.unit_type_id,
             variant=UnitVariant(body.variant.value) if body.variant else None,
+            status=UnitStatus(body.status.value) if body.status else None,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

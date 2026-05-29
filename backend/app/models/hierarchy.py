@@ -57,6 +57,12 @@ class UnitVariant(str, Enum):
     CUSTOM   = "custom"
 
 
+class UnitStatus(str, Enum):
+    """Operational lifecycle for bulk unit management."""
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
 # ---------------------------------------------------------------------------
 # HierarchyConfig — controls which hierarchy levels are active
 # ---------------------------------------------------------------------------
@@ -197,5 +203,6 @@ class Unit(BaseDomainModel):
     code:         str                 = Field(..., min_length=1, max_length=50,
                                              description="Short code: '201', 'A12'")
     variant:      UnitVariant         = Field(default=UnitVariant.STANDARD)
+    status:       UnitStatus          = Field(default=UnitStatus.ACTIVE)
     notes:        Optional[str]       = Field(default=None, max_length=1000)
     sort_order:   int                 = Field(default=0)

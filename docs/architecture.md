@@ -730,3 +730,44 @@ To support realistic multifamily projects (100–300+ units), the application pr
 
 ### 2. Import Compatibility Notes
 The Bulk Unit Engine operates via REST JSON today, but its implementation within `HierarchyService.bulk_add_units()` is architected to seamlessly plug into future data sources. A future CSV or Excel parser will simply normalize rows into this bulk generation logic, ensuring domain constraints (tenant isolation, building/floor foreign keys, and unique constraints) are centrally enforced regardless of input mechanism.
+
+---
+
+## Operational Scale Layer (Phase 14)
+
+Phase 14 adds operational scalability features that support larger multifamily countertop programs without changing the core fabrication package model.
+
+### Tenant Profile Configuration
+Tenant profile fields live on `TenantRecord` and are exposed through `GET/PUT /api/v1/tenant/profile`.
+- `company_name` controls PDF cover and footer branding.
+- `logo_url` is treated as a lightweight logo placeholder reference for now.
+- `default_footer` replaces the hardcoded PDF confidentiality/footer text.
+- `standard_notes` replaces hardcoded fabrication notes on package covers.
+
+This remains a tenant profile foundation, not a full white-label subsystem.
+
+### Search Architecture
+`SearchRepository` is the cross-entity operational query layer. It returns normalized `SearchResultItem` objects for:
+- Projects
+- Units
+- Assemblies
+- Packages
+- RFIs
+
+All queries are scoped by `tenant_id` and support filters for status, project, building, floor, unit type, assembly type, and date range. The frontend uses the same endpoint for dashboard search, saved filters, project search, and operational queues.
+
+### Bulk Workflow Architecture
+`Unit.status` adds a minimal lifecycle state for large schedule operations:
+- `active`
+- `archived`
+
+`PUT /api/v1/projects/{project_id}/units/bulk` performs tenant-scoped bulk updates for unit type assignment, variant assignment, hierarchy assignment, and archive/reactivation status changes. This supports realistic schedule cleanups without introducing a broader workflow engine.
+
+### Frontend Operations Surface
+The dashboard now has four operational views:
+- Projects
+- Search
+- Queues
+- Settings
+
+The project workspace keeps authoring focused on fabrication, with an added project-scoped search tab and bulk controls in `HierarchyPanel`.

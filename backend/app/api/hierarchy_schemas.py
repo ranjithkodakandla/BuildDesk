@@ -31,6 +31,11 @@ class UnitVariantSchema(str, Enum):
     CUSTOM   = "custom"
 
 
+class UnitStatusSchema(str, Enum):
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
 # ---------------------------------------------------------------------------
 # HierarchyConfig
 # ---------------------------------------------------------------------------
@@ -188,6 +193,7 @@ class UnitBulkUpdateRequest(BaseModel):
     floor_id:     Optional[uuid.UUID] = Field(default=None)
     unit_type_id: Optional[uuid.UUID] = Field(default=None)
     variant:      Optional[UnitVariantSchema] = Field(default=None)
+    status:       Optional[UnitStatusSchema] = Field(default=None)
 
 class UnitBulkUpdateResponse(BaseModel):
     updated_count: int
@@ -202,6 +208,7 @@ class UnitResponse(BaseModel):
     floor_id:     Optional[uuid.UUID]
     unit_type_id: Optional[uuid.UUID]
     variant:      str
+    status:       str
     notes:        Optional[str]
     sort_order:   int
     created_at:   datetime

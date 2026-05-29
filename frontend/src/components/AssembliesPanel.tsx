@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Project, UnitType } from '../types/hierarchy';
-import { Assembly, AssemblyType, UnitVariant } from '../types/fabrication';
+import { Project, UnitType, UnitVariant } from '../types/hierarchy';
+import { Assembly, AssemblyType } from '../types/fabrication';
 import { assembliesApi } from '../api/assemblies';
 import { projectsApi } from '../api/projects';
 import { AssemblyEditor } from './AssemblyEditor';
@@ -142,6 +142,7 @@ export const AssembliesPanel: React.FC<Props> = ({ project }) => {
                     const confirmDup = window.confirm(`Duplicate "${asm.name}"?`);
                     if (confirmDup) {
                       try {
+                        if (!asm.assembly_id) return;
                         const duplicate = await assembliesApi.duplicateAssembly(asm.assembly_id, {
                           new_name: `${asm.name} (Copy)`
                         });

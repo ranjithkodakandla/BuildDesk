@@ -26,6 +26,7 @@ class SearchQueryRequest(BaseModel):
     floor_id: Optional[uuid.UUID] = Field(default=None)
     unit_type_id: Optional[uuid.UUID] = Field(default=None)
     assembly_type: Optional[str] = Field(default=None)
+    limit: int = Field(default=50, ge=1, le=200)
 
 
 class SearchResultItem(BaseModel):
