@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-29  
 **Consolidation:** Phase 16 lock-down complete  
-**Canonical baseline:** `canonical-phase16` @ **`bd628ea`** (docs consolidation on code **`3425c68`**)  
+**Canonical baseline:** `canonical-phase16` @ **`394aad4`** (docs consolidation on code **`3425c68`**)  
 **Source branch:** `feat/phase16-production-signoff` @ `3425c68`
 
 ---

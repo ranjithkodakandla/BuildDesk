@@ -9,7 +9,7 @@
 | Field              | Value |
 |--------------------|--------|
 | Last completed phase | Phase 16 — Production Persistence & Launch Sign-off (consolidated) |
-| **Canonical baseline** | **`canonical-phase16`** @ `bd628ea` (runtime/deploy `3425c68`) |
+| **Canonical baseline** | **`canonical-phase16`** @ `394aad4` (runtime/deploy `3425c68`) |
 | Feature branch (merged) | `feat/phase16-production-signoff` |
 | Test baseline | Backend **76 / 76** pytest; frontend **17 / 17**; build OK |
 | Live revision | `builddesk-api-00019-6p8` |
