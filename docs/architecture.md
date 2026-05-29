@@ -771,3 +771,11 @@ The dashboard now has four operational views:
 - Settings
 
 The project workspace keeps authoring focused on fabrication, with an added project-scoped search tab and bulk controls in `HierarchyPanel`.
+
+### Integration Validation (Phase 14.5)
+
+Phase 14.5 closed the loop between tenant profile configuration and issued-package output without expanding the domain model.
+
+- **Profile → PDF path:** `PUT /api/v1/tenant/profile` persists branding on `TenantRecord`. `POST /projects/{id}/package/generate` builds the manifest synchronously, then `generate_pdf_background` loads the tenant via `SQLTenantRepository` and passes it to `PackagePdfExporter`.
+- **Async worker DB access:** Background tasks use `SessionLocal`; integration tests patch `app.tasks.package_generation.SessionLocal` to the test engine so workers share the same database session factory as HTTP handlers.
+- **Validation layers:** Pytest integration (`test_phase14_5_integration.py`) covers the branding pipeline; `run_pilot_workflow.py` exercises the full multifamily operational workflow (import-ready hierarchy, packages, revisions, approvals, exports) via authenticated HTTP.

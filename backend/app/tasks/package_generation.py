@@ -60,7 +60,7 @@ def generate_pdf_background(
                 tenant_id=tenant_id,
                 name="BuildDesk Tenant",
                 slug=f"tenant-{str(tenant_id)[:8]}",
-                contact_email="ops@builddesk.local",
+                contact_email="ops@example.com",
             )
             tenant_repo.save(tenant)
 

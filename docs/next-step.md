@@ -8,10 +8,11 @@
 
 | Field              | Value                                  |
 |--------------------|----------------------------------------|
-| Last completed phase | Phase 14 — Configurable Tenant Profiles & Advanced Search |
-| Git branch         | `phase14-recovery` |
-| Test baseline      | Backend passing, frontend tests passing, frontend compiled |
+| Last completed phase | Phase 14.5 — Integration Validation |
+| Git branch         | `feat/phase14-5-integration-validation` |
+| Test baseline      | Backend `64 / 64` pytest; frontend `17 / 17`; production build succeeds |
 | Migration state    | Up to date at `7e84f9a21c30` |
+| Pilot workflow     | `backend/scripts/run_pilot_workflow.py` passing end-to-end |
 
 ---
 
@@ -19,7 +20,7 @@
 
 **Phase 15 — Production Launch Hardening**
 
-Phase 14 is recovered and stable. The system now supports tenant profile configuration, advanced operational search, bulk unit workflow updates, dashboard queues, and tenant-aware PDF rendering.
+Phase 14.5 integration validation is complete. Phase 14 operational features are stable: tenant profiles, advanced search, bulk unit workflows, dashboard queues, and tenant-aware async PDF generation.
 
 ### Next Execution Target: Phase 15 — Launch Hardening
 

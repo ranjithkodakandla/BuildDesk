@@ -303,6 +303,14 @@ Corrected roadmap:
 - **Migration State:** Alembic head is `7e84f9a21c30` after tenant branding fields and unit status additions.
 - **Validation:** Backend `63 / 63` passing; frontend `17 / 17` passing; frontend production build succeeds.
 
+### Phase 14.5: Integration Validation (✅ Complete)
+**Goal:** Validate Phase 14 features through real service flows before launch hardening — no new product surface area.
+- **Pilot Fix:** Corrected fallback tenant email in async `generate_pdf_background` (`ops@example.com`) so Pydantic `EmailStr` validation no longer fails during package generation.
+- **Integration Test:** Added `backend/tests/test_phase14_5_integration.py` — tenant profile `PUT` → package `POST` → background PDF generation → download, with branding assertions on persisted tenant + exporter path and cross-tenant search isolation.
+- **Operational E2E:** Revalidated `run_pilot_workflow.py` (hierarchy, bulk units, assemblies, async packages, revisions, approval transitions, RFIs, exports).
+- **Smoke Assessment:** Legacy `smoke_*.py` scripts inventoried; most pre-auth API smokes are obsolete (401 without JWT). See Phase 14.5 validation report for CI recommendations.
+- **Validation:** Backend pytest `64 / 64`; frontend `17 / 17`; frontend production build succeeds; pilot workflow green.
+
 Deferred:
   □ Complex BI Dashboards
   □ StoneDesk integration
