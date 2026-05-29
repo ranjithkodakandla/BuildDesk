@@ -164,6 +164,12 @@ To rapidly populate the `Unit` hierarchy, the `ImportService` orchestrates a two
 1. **Validation & Preview:** Translates raw schedules via dynamic `ImportMapping`, validates references (e.g. valid `unit_type`), and identifies duplicates.
 2. **Execution:** Materializes the structured rows into domain entities.
 Error logs and mappings are isolated per `tenant_id` on the `ImportJobRecord`.
+
+### Phase 10: Export Engine
+To enable data round-tripping and operational reporting, the `ExportService` tracks asynchronous artifact generation using `ExportJobRecord`. It supports formats like `.csv` and `.xlsx` built on top of `openpyxl`.
+- **Schedule:** Extracts project hierarchy into flat rows mapping units to buildings/floors.
+- **Fabrication:** Aggregates parametric sub-parts, sizes, and square footage across all instantiated unit assemblies.
+- **Summary:** Rolls up square footage estimation grouped by `UnitType`.
 * **Additivity**: Legacy single-shape geometry records (`GeometryModel`) coexist alongside the normalized Assembly structure during the transition phase.
 
 ## Service Layer

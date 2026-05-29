@@ -397,3 +397,27 @@ class ImportJobRecord(Base):
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+# ---------------------------------------------------------------------------
+# Phase 10: Export Workflow
+# ---------------------------------------------------------------------------
+
+class ExportJobRecord(Base):
+    """
+    Stores execution state and artifact references for operational exports.
+    """
+    __tablename__ = "export_jobs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
+    
+    export_type: Mapped[str] = mapped_column(String(50), nullable=False) # e.g. schedule, fabrication, summary
+    format: Mapped[str] = mapped_column(String(10), nullable=False) # e.g. csv, xlsx
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
+    
+    file_path: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    error_log: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

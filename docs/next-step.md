@@ -8,8 +8,8 @@
 
 | Field              | Value                                  |
 |--------------------|----------------------------------------|
-| Last completed phase | Phase 9 — Import Foundation (CSV/Excel Ready) |
-| Git branch         | `feat/phase-9-import-foundation` |
+| Last completed phase | Phase 10 — Export Engine Enhancements (Round-Trip Workflow) |
+| Git branch         | `feat/phase-10-export-engine` |
 | Test baseline      | Passing backend, frontend compiled |
 | Migration state    | Up to date |
 
@@ -17,15 +17,15 @@
 
 ## Immediate Next Milestone
 
-**Phase 10 — Export Engine Enhancements**
+**Phase 11 — Export Engine PDF Overhaul (Dimension Callouts, Cover Page, TOC)**
 
-The system is ready to proceed to Phase 10.
+The system is ready to proceed to Phase 11.
 
-### Next Execution Target: Phase 10 — Export Engine Enhancements
+### Next Execution Target: Phase 11 — Export Engine PDF Overhaul
 
-With the import and bulk authoring foundations complete, the focus shifts back to the output artifacts themselves. The current exports (PDF and SVG) are functional but need refinement to match the visual fidelity and detail required by professional countertop fabricators.
+With the operational exports (CSV/XLSX) complete for schedules and fabrication counts, the focus must shift to upgrading the visual layout and fidelity of the PDF artifact generation.
 
-**Key Objectives for Phase 10:**
+**Key Objectives for Phase 11:**
 1. **Dimension Callouts:** Implement automated dimensional annotations on SVG vectors so that shop floor workers can read measurements directly from the diagrams without manual scaling.
 2. **Cover Page Generation:** Add a professional cover page to the PDF package, including project metadata, total unit counts, revision history, and standard fabrication notes.
 3. **Table of Contents:** Include an index page mapping unit types to their corresponding package pages for easier navigation in large (100+ page) printouts.
@@ -38,4 +38,4 @@ With the import and bulk authoring foundations complete, the focus shifts back t
 
 ## Pending Blockers
 
-- None currently blocking Phase 10.
+- None currently blocking Phase 11.

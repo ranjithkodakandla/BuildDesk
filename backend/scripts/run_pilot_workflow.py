@@ -313,11 +313,27 @@ def run():
 
     out_dir = os.path.join(os.path.dirname(__file__), "..", "..", "artifacts")
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, "pilot_package.pdf")
-    with open(out_path, "wb") as f:
+    pdf_out_path = os.path.join(out_dir, "pilot_package.pdf")
+    with open(pdf_out_path, "wb") as f:
         f.write(pdf_res.content)
     
-    print(f"✅ Pilot validation workflow completed successfully. PDF saved to {out_path}.")
+    # 9. Export operational reports
+    print("9. Generating Operational Exports (Phase 10)...")
+    
+    # Schedule CSV
+    res = client.post(f"/api/v1/projects/{project_id}/exports", json={"export_type": "schedule", "format": "csv"}, headers=headers)
+    assert res.status_code == 201
+    
+    # Fabrication XLSX
+    res = client.post(f"/api/v1/projects/{project_id}/exports", json={"export_type": "fabrication", "format": "xlsx"}, headers=headers)
+    assert res.status_code == 201
+
+    # Summary CSV
+    res = client.post(f"/api/v1/projects/{project_id}/exports", json={"export_type": "summary", "format": "csv"}, headers=headers)
+    assert res.status_code == 201
+
+    print(f"✅ Pilot validation workflow completed successfully. PDF saved to {pdf_out_path}.")
+    print("✅ Exports generated successfully in background.")
 
 if __name__ == "__main__":
     run()

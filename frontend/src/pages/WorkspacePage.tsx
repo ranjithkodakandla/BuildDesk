@@ -3,12 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { projectsApi } from '../api/projects';
 import { Project } from '../types/hierarchy';
 import { useAuthStore } from '../store/authStore';
+import { HierarchyPanel } from '../components/HierarchyPanel';
+import { AssembliesPanel } from '../components/AssembliesPanel';
+import { PackagesPanel } from '../components/PackagesPanel';
+import ExportModal from '../components/ExportModal';
 
 export const WorkspacePage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState<'hierarchy' | 'assemblies' | 'packages'>('assemblies');
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     if (projectId) {
@@ -29,6 +34,14 @@ export const WorkspacePage: React.FC = () => {
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">{project.name}</h1>
             <p className="text-sm text-gray-500">{project.client_name || 'No Client'} • {project.status.toUpperCase()}</p>
           </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => setShowExportModal(true)}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+          >
+            Export Data
+          </button>
         </div>
       </header>
 
@@ -51,35 +64,13 @@ export const WorkspacePage: React.FC = () => {
         {activeTab === 'assemblies' && <AssembliesPanel project={project} />}
         {activeTab === 'packages' && <PackagesPanel project={project} />}
       </main>
-    </div>
-  );
-};
-
-// --- Subpanels (Stubs for now, will implement full later) ---
-
-const HierarchyPanel = ({ project }: { project: Project }) => {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-lg font-bold mb-4">Project Hierarchy & Units</h2>
-      <p className="text-sm text-gray-600">Configure buildings, floors, unit types (A1, A1-MIR, B1), and individual units here.</p>
-    </div>
-  );
-};
-
-const AssembliesPanel = ({ project }: { project: Project }) => {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-lg font-bold mb-4">Fabrication Assemblies</h2>
-      <p className="text-sm text-gray-600">Define Kitchens, Vanities, Islands with edges, cutouts, holes, and splashes.</p>
-    </div>
-  );
-};
-
-const PackagesPanel = ({ project }: { project: Project }) => {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-lg font-bold mb-4">Package Generation</h2>
-      <p className="text-sm text-gray-600">Generate the multi-page PDF fabrication package.</p>
+      
+      {showExportModal && (
+        <ExportModal 
+          projectId={project.project_id} 
+          onClose={() => setShowExportModal(false)} 
+        />
+      )}
     </div>
   );
 };

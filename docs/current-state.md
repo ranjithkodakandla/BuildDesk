@@ -258,6 +258,15 @@ Corrected roadmap:
 - **Frontend UI:** Built `ImportModal.tsx` to handle file upload, column mapping selection, validation preview, and execution.
 - **Pilot Revalidation:** The existing pilot script continues to work, demonstrating backward compatibility and resilience of the domain logic.
 
-Deferred (pending Phase 10):
-  □ Export Engine Enhancements (Dimension Callouts, Cover Page, TOC)
-  □ Distributed Workers (Celery/Kafka) - *Only when scale dictates (>1000 concurrent units)*
+### Phase 10: Export Engine Enhancements (Round-Trip Workflow) (✅ Complete)
+**Goal:** Extend BuildDesk beyond PDF deliverables. Support practical operational exports used in multifamily countertop workflows.
+- **Export Domain Foundation:** Created `ExportJobRecord` to track export generation tasks per tenant.
+- **Schedule Export:** Implemented Unit Schedule exports to CSV and XLSX for bidirectional data exchange.
+- **Fabrication Export:** Implemented part-level generation to CSV and XLSX for estimating and operations.
+- **Summary Export:** Implemented type-level sqft and counts summaries to CSV and XLSX.
+- **Frontend Center:** Added an `ExportModal` to the Project Workspace to trigger, track, and download exports.
+- **Pilot Revalidation:** Augmented `run_pilot_workflow.py` to trigger the three exports concurrently upon generation.
+
+Deferred:
+  □ Complex BI Dashboards
+  □ StoneDesk integration

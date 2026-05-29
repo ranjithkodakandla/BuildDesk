@@ -23,6 +23,7 @@ from app.api.hierarchy import router as hierarchy_router
 from app.api.packages import router as packages_router
 from app.api.shapes import router as shapes_router
 from app.api.imports import router as imports_router
+from app.api.exports import router as exports_router
 from app.config import get_settings
 
 # ---------------------------------------------------------------------------
@@ -94,6 +95,8 @@ def create_app() -> FastAPI:
     application.include_router(packages_router,  prefix="/api/v1", tags=["packages"])
     # Phase 9: Import Domain
     application.include_router(imports_router,   prefix="/api/v1", tags=["imports"])
+    # Phase 10: Export Domain
+    application.include_router(exports_router,   prefix="/api/v1", tags=["exports"])
     # Legacy geometry endpoints (deprecated, kept for backward compatibility)
     application.include_router(shapes_router,    prefix="/api/v1", tags=["shapes (legacy)"])
     application.include_router(geometry_router,  prefix="/api/v1", tags=["geometry (legacy)"])
