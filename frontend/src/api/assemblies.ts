@@ -1,4 +1,4 @@
-import client from './client';
+import client, { API_BASE_URL } from './client';
 import { Assembly } from '../types/fabrication';
 
 export const assembliesApi = {
@@ -29,7 +29,7 @@ export const assembliesApi = {
     return res.data;
   },
   getSvgPreviewUrl: (assemblyId: string): string => {
-    const baseUrl = client.defaults.baseURL || 'http://localhost:8000/api/v1';
+    const baseUrl = client.defaults.baseURL || API_BASE_URL;
     return `${baseUrl}/assemblies/${assemblyId}/preview/svg`;
   }
 };

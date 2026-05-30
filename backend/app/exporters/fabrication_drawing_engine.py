@@ -696,7 +696,7 @@ class FabricationDrawingEngine:
 
         scale_w = avail_w / max(total_raw_w, 0.1)
         scale_h = avail_h / max(max_raw_h, 0.1)
-        scale   = min(scale_w, scale_h, 6.0)   # cap at 6 pts/inch (very large parts)
+        scale   = min(scale_w, scale_h, 8.0)   # cap at 8 pts/inch for large drawing zones
         scale   = max(scale, 0.8)               # floor at 0.8 pts/inch
 
         # Position parts left-to-right, starting offset for splash bands

@@ -44,18 +44,18 @@ export interface ExportRequest extends GeometryRequest {}
 
 export const geometryApi = {
   create: (body: GeometryRequest) =>
-    apiClient.post<GeometryResponse>('/api/v1/geometry', body),
+    apiClient.post<GeometryResponse>('/geometry', body),
 
   getById: (geometryId: string) =>
-    apiClient.get<GeometryResponse>(`/api/v1/geometry/${geometryId}`),
+    apiClient.get<GeometryResponse>(`/geometry/${geometryId}`),
 };
 
 export const exportApi = {
   svg: (body: ExportRequest) =>
-    apiClient.post('/api/v1/export/svg', body, { responseType: 'text' }),
+    apiClient.post('/export/svg', body, { responseType: 'text' }),
 
   pdf: (body: ExportRequest) =>
-    apiClient.post('/api/v1/export/pdf', body, { responseType: 'blob' }),
+    apiClient.post('/export/pdf', body, { responseType: 'blob' }),
 };
 
 // ── Shape dimension configs ────────────────────────────────────────────────

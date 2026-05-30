@@ -10,12 +10,19 @@ Endpoints:
 """
 from __future__ import annotations
 
+import re
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 
-from app.auth.dependencies import get_current_tenant, get_user_repository, require_active_user
+from app.auth.dependencies import (
+    get_current_tenant,
+    get_optional_tenant,
+    get_user_repository,
+    require_active_user,
+)
 from app.auth.jwt import create_access_token
 from app.auth.password import hash_password, verify_password
 from app.dependencies import get_tenant_repository
@@ -45,9 +52,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # ---------------------------------------------------------------------------
 
 class RegisterRequest(BaseModel):
-    email: EmailStr = Field(..., description="User email address (unique per tenant)")
+    email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., min_length=8, description="Plaintext password (min 8 chars)")
-    role: str = Field(default="member", description="User role: 'member' or 'admin'")
+    role: str = Field(default="admin", description="User role: 'member' or 'admin'")
+    workspace_name: Optional[str] = Field(
+        default=None,
+        min_length=2,
+        max_length=80,
+        description="New workspace name (creates tenant automatically)",
+    )
 
 
 class LoginRequest(BaseModel):
@@ -76,6 +89,11 @@ class UserProfileResponse(BaseModel):
 # POST /auth/register
 # ---------------------------------------------------------------------------
 
+def _slugify(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return slug[:48] or f"workspace-{uuid.uuid4().hex[:8]}"
+
+
 @router.post(
     "/register",
     response_model=TokenResponse,
@@ -89,23 +107,46 @@ class UserProfileResponse(BaseModel):
 )
 def register(
     body: RegisterRequest,
-    tenant_id: uuid.UUID = Depends(get_current_tenant),
+    tenant_id: Optional[uuid.UUID] = Depends(get_optional_tenant),
     repo: UserRepository = Depends(get_user_repository),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
 ) -> TokenResponse:
-    _ensure_tenant_exists(tenant_id, body.email, tenant_repo)
-    # Enforce uniqueness within tenant
-    existing = repo.get_by_email(tenant_id, body.email)
-    if existing:
+    email = body.email.lower()
+
+    if body.workspace_name:
+        if repo.get_by_email_global(email):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A user with email '{body.email}' already exists.",
+            )
+        tenant = Tenant(
+            tenant_id=uuid.uuid4(),
+            name=body.workspace_name.strip(),
+            slug=_slugify(body.workspace_name),
+            contact_email=email,
+            company_name=body.workspace_name.strip(),
+        )
+        tenant_repo.save(tenant)
+        scope_tenant_id = tenant.tenant_id
+    elif tenant_id is not None:
+        _ensure_tenant_exists(tenant_id, email, tenant_repo)
+        scope_tenant_id = tenant_id
+        existing = repo.get_by_email(scope_tenant_id, email)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A user with email '{body.email}' already exists in this tenant.",
+            )
+    else:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"A user with email '{body.email}' already exists in this tenant.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="workspace_name is required for new registration.",
         )
 
-    role = body.role if body.role in ("member", "admin") else "member"
+    role = body.role if body.role in ("member", "admin") else "admin"
     user = User(
-        tenant_id=tenant_id,
-        email=body.email.lower(),
+        tenant_id=scope_tenant_id,
+        email=email,
         hashed_password=hash_password(body.password),
         role=role,
     )
@@ -142,10 +183,9 @@ def register(
 )
 def login(
     body: LoginRequest,
-    tenant_id: uuid.UUID = Depends(get_current_tenant),
     repo: UserRepository = Depends(get_user_repository),
 ) -> TokenResponse:
-    user = repo.get_by_email(tenant_id, body.email)
+    user = repo.get_by_email_global(body.email)
     if user is None or not verify_password(body.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

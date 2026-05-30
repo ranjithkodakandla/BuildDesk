@@ -66,6 +66,15 @@ class SQLUserRepository(UserRepository):
         ).first()
         return _record_to_user(record) if record else None
 
+    def get_by_email_global(self, email: str) -> Optional[User]:
+        record = (
+            self.session.query(UserRecord)
+            .filter(UserRecord.email == email.lower())
+            .order_by(UserRecord.created_at.asc())
+            .first()
+        )
+        return _record_to_user(record) if record else None
+
     def list_by_tenant(self, tenant_id: uuid.UUID) -> List[User]:
         records = self.session.query(UserRecord).filter(
             UserRecord.tenant_id == str(tenant_id)

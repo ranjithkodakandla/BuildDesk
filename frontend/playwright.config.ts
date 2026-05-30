@@ -11,7 +11,7 @@ export default defineConfig({
     screenshot: 'on',
     trace: 'on',
     video: 'on',
-    launchOptions: { slowMo: 400 },
+    launchOptions: { slowMo: 500 },
   },
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'e2e-report' }]],
 });

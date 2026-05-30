@@ -4,7 +4,10 @@ import { Project, UnitStatus, UnitType, Unit, UnitVariant } from '../types/hiera
 export const projectsApi = {
   listProjects: async (): Promise<Project[]> => {
     const res = await client.get('/projects');
-    return res.data.projects ?? res.data;
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.projects)) return data.projects;
+    return [];
   },
   getProject: async (projectId: string): Promise<Project> => {
     const res = await client.get(`/projects/${projectId}`);

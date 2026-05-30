@@ -27,5 +27,10 @@ class UserRepository(ABC):
         ...
 
     @abstractmethod
+    def get_by_email_global(self, email: str) -> Optional[User]:
+        """Resolve user by email across all tenants (login without tenant UUID)."""
+        ...
+
+    @abstractmethod
     def list_by_tenant(self, tenant_id: uuid.UUID) -> list[User]:
         ...

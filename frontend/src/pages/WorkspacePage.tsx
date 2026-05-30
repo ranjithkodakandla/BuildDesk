@@ -5,14 +5,26 @@ import { Project } from '../types/hierarchy';
 import { HierarchyPanel } from '../components/HierarchyPanel';
 import { AssembliesPanel } from '../components/AssembliesPanel';
 import { PackagesPanel } from '../components/PackagesPanel';
+import { OverviewPanel } from '../components/OverviewPanel';
 import ExportModal from '../components/ExportModal';
 import { SearchPanel } from '../components/SearchPanel';
+import { OperationalQueuesPanel } from '../components/OperationalQueuesPanel';
+
+type WorkspaceTab = 'overview' | 'units' | 'fabrication' | 'package' | 'operations';
+
+const TABS: { id: WorkspaceTab; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'units', label: 'Units' },
+  { id: 'fabrication', label: 'Fabrication' },
+  { id: 'package', label: 'Package' },
+  { id: 'operations', label: 'Operations' },
+];
 
 export const WorkspacePage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
-  const [activeTab, setActiveTab] = useState<'hierarchy' | 'assemblies' | 'packages' | 'search'>('assemblies');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('overview');
   const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
@@ -32,45 +44,54 @@ export const WorkspacePage: React.FC = () => {
           </button>
           <div>
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">{project.name}</h1>
-            <p className="text-sm text-gray-500">{project.client_name || 'No Client'} • {project.status.toUpperCase()}</p>
+            <p className="text-sm text-gray-500">
+              {project.client_name || 'No Client'} · {project.status.toUpperCase()}
+            </p>
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <button 
-            onClick={() => setShowExportModal(true)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
-          >
-            Export Data
-          </button>
-        </div>
+        <button
+          onClick={() => setShowExportModal(true)}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm"
+        >
+          Export Data
+        </button>
       </header>
 
       <div className="bg-white border-b border-gray-200 px-6">
         <nav className="flex space-x-8">
-          {(['hierarchy', 'assemblies', 'packages', 'search'] as const).map(tab => (
+          {TABS.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${activeTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === tab.id
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
             >
-              {tab.replace('_', ' ')}
+              {tab.label}
             </button>
           ))}
         </nav>
       </div>
 
       <main className="flex-1 overflow-auto p-6">
-        {activeTab === 'hierarchy' && <HierarchyPanel project={project} />}
-        {activeTab === 'assemblies' && <AssembliesPanel project={project} />}
-        {activeTab === 'packages' && <PackagesPanel project={project} />}
-        {activeTab === 'search' && <SearchPanel projectId={project.project_id} />}
+        {activeTab === 'overview' && (
+          <OverviewPanel project={project} onNavigate={setActiveTab} />
+        )}
+        {activeTab === 'units' && <HierarchyPanel project={project} />}
+        {activeTab === 'fabrication' && <AssembliesPanel project={project} />}
+        {activeTab === 'package' && <PackagesPanel project={project} />}
+        {activeTab === 'operations' && (
+          <div className="space-y-6">
+            <SearchPanel projectId={project.project_id} />
+            <OperationalQueuesPanel onOpenProject={(id) => navigate(`/projects/${id}`)} />
+          </div>
+        )}
       </main>
-      
+
       {showExportModal && (
-        <ExportModal 
-          projectId={project.project_id} 
-          onClose={() => setShowExportModal(false)} 
-        />
+        <ExportModal projectId={project.project_id} onClose={() => setShowExportModal(false)} />
       )}
     </div>
   );

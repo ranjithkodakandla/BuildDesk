@@ -34,7 +34,7 @@ from app.exporters.fabrication_drawing_engine import (
     FabricationDrawingEngine,
     format_dimension_inch_mm,
 )
-from app.models.fabrication import Assembly, Part
+from app.models.fabrication import Assembly, EdgeType, Part, Position
 from app.models.hierarchy import Project
 from app.models.tenant import Tenant
 from app.models.project_package import PackageSummary, UnitTypeGroup, ProjectPackage
@@ -61,14 +61,18 @@ _FOOTER_H = 0.32 * inch
 _BODY_Y   = _FOOTER_H + _M        # bottom of body zone
 _BODY_H   = _H - _HEADER_H - _FOOTER_H - _M * 2
 
-# Two-column split on drawing pages
-_DRAW_FRAC = 0.61                  # 61% for drawing
-_NOTE_FRAC = 0.36                  # 36% for notes (3% is gutter)
-_GUTTER    = _W * 0.03
+# Phase 17 — drawing-first assembly sheets (full width)
+_ASM_STRIP_H = 0.30 * inch
+_ASM_TABLE_H = 0.95 * inch
+_ASM_NOTES_H = 0.24 * inch
 
+# Legacy two-column (cover/summary only)
+_DRAW_FRAC = 0.61
+_NOTE_FRAC = 0.36
+_GUTTER    = _W * 0.03
 _DRAW_W = _W * _DRAW_FRAC - _M
 _NOTE_W = _W * _NOTE_FRAC - _M
-_NOTE_X = _M + _DRAW_W + _GUTTER   # x-start of notes column
+_NOTE_X = _M + _DRAW_W + _GUTTER
 
 
 class PackagePdfExporter:
@@ -395,56 +399,51 @@ class PackagePdfExporter:
         group: UnitTypeGroup, assembly_type: str,
         assemblies: List[Assembly], version: str, tenant: Tenant
     ):
+        """Phase 17 drawing-first sheet: large canvas + compact fab table."""
         self._page_num += 1
         label = assembly_type.replace("_", " ").title()
         variant = " [MIR]" if group.is_mirror else (" [ADA]" if group.is_ada else "")
-        self._page_header(
-            c, project,
-            f"TYPE {group.unit_type_code}  —  {label}{variant}",
-            f"Qty: {group.unit_count}"
-        )
 
-        body_top = _H - _HEADER_H - _M * 0.3
+        body_top = _H - _HEADER_H - _M * 0.12
         body_bot = _BODY_Y
-        draw_h   = body_top - body_bot
+        table_top = body_bot + _ASM_NOTES_H
+        draw_bot = table_top + _ASM_TABLE_H + 6
+        strip_y = body_top - _ASM_STRIP_H
 
         if not assemblies:
+            self._page_header(c, project, f"TYPE {group.unit_type_code}  —  {label}{variant}", "")
             c.setFont("Helvetica", 11)
             c.setFillColor(_C_GREY)
-            c.drawString(_M, body_top - 0.3 * inch,
-                         f"No assemblies of type '{label}' defined for this unit type.")
+            c.drawString(_M, body_top - 0.3 * inch, f"No assemblies of type '{label}' defined.")
             self._footer(c, project.name, version, tenant)
             return
 
-        asm = assemblies[0]   # representative assembly
+        asm = assemblies[0]
         use_shop = asm.assembly_type.value == "custom" and len(asm.parts) >= 4
 
-        draw_zone_x = _M
-        draw_zone_y = body_bot
-        draw_zone_w = _DRAW_W - 0.05 * inch
-        draw_zone_h = draw_h - 0.15 * inch
+        self._draw_assembly_title_strip(
+            c, project, group, asm, version, label, variant, strip_y, body_top
+        )
 
-        c.setFillColor(HexColor("#f8fafc"))
-        c.setStrokeColor(HexColor("#cccccc"))
-        c.setLineWidth(0.5)
-        c.rect(draw_zone_x, draw_zone_y, draw_zone_w, draw_zone_h, fill=1, stroke=1)
+        draw_x = _M
+        draw_w = _W - 2 * _M
+        draw_h = strip_y - draw_bot - 8
 
-        inner_x = draw_zone_x + 6
-        inner_y = draw_zone_y + 6
-        inner_w = draw_zone_w - 12
-        inner_h = draw_zone_h - 12
+        c.setFillColor(HexColor("#fafbfc"))
+        c.setStrokeColor(HexColor("#cbd5e1"))
+        c.setLineWidth(0.6)
+        c.rect(draw_x, draw_bot, draw_w, draw_h, fill=1, stroke=1)
+
+        inner_x, inner_y = draw_x + 8, draw_bot + 8
+        inner_w, inner_h = draw_w - 16, draw_h - 16
 
         legend_h = self._engine.draw_granite_quartz_key_notes(
-            c, inner_x + inner_w - 205, inner_y + inner_h - 4, w=200
+            c, inner_x + inner_w - 148, inner_y + inner_h - 2, w=140
         )
 
         c.setFillColor(_C_DARK)
-        c.setFont("Helvetica-Bold", 14)
-        c.drawCentredString(inner_x + inner_w / 2, inner_y + inner_h - 18, f"QTY={group.unit_count}")
-
-        if project.client_name:
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(inner_x + 8, inner_y + inner_h - 34, project.client_name[:48])
+        c.setFont("Helvetica-Bold", 12)
+        c.drawCentredString(inner_x + inner_w / 2, inner_y + inner_h - 12, f"QTY={group.unit_count}")
 
         self._engine.draw_assembly(
             c=c,
@@ -452,27 +451,115 @@ class PackagePdfExporter:
             zone_x=inner_x,
             zone_y=inner_y,
             zone_w=inner_w,
-            zone_h=inner_h - legend_h - 28,
+            zone_h=max(inner_h - legend_h - 22, 80),
             is_mirror=group.is_mirror,
             shop_sheet_layout=use_shop,
         )
 
         c.setFont("Helvetica-Oblique", 6)
         c.setFillColor(_C_GREY)
-        c.drawString(draw_zone_x, draw_zone_y - 8, "Scale: NTS  |  Dimensions in inch [mm]")
+        c.drawString(draw_x, draw_bot - 6, "Scale: NTS  |  Dimensions in inch [mm]")
 
-        self._draw_vertical_title_block(
-            c, project, group, asm, version, tenant, package_qty=group.unit_count,
-            sheet_id=version,
-            x=_W - _M - 0.88 * inch,
-            y=body_bot,
-            h=draw_h,
-        )
-
-        notes_y = body_top
-        self._draw_notes_column(c, asm, notes_y, draw_zone_h)
-
+        self._draw_compact_fab_table(c, asm, draw_x, table_top, draw_w, _ASM_TABLE_H)
+        self._draw_short_notes(c, asm, draw_x, body_bot, draw_w)
         self._footer(c, project.name, version, tenant)
+
+    def _draw_assembly_title_strip(
+        self, c, project, group, asm, version, label, variant, strip_y, body_top
+    ):
+        c.setFillColor(HexColor("#1a2332"))
+        c.rect(_M, strip_y, _W - 2 * _M, _ASM_STRIP_H, fill=1, stroke=0)
+        c.setFillColor(_C_WHITE)
+        c.setFont("Helvetica-Bold", 8)
+        fields = [
+            project.name[:22],
+            f"TYPE {group.unit_type_code}",
+            (project.material or "—")[:16],
+            f"QTY {group.unit_count}",
+            f"Rev {version}",
+            f"Sheet {self._page_num}/{self._total_pages}",
+        ]
+        x = _M + 8
+        for i, txt in enumerate(fields):
+            c.drawString(x, strip_y + 9, txt)
+            x += c.stringWidth(txt, "Helvetica-Bold", 8) + 14
+            if i < len(fields) - 1:
+                c.setFillColor(_C_MID)
+                c.drawString(x - 7, strip_y + 9, "|")
+                c.setFillColor(_C_WHITE)
+        c.setFont("Helvetica", 7)
+        c.drawString(_M + 8, strip_y - 2, f"{label}{variant}  ·  {asm.name[:50]}")
+
+    @staticmethod
+    def _edge_letter(edge_type: EdgeType) -> str:
+        return {
+            EdgeType.POLISHED: "P",
+            EdgeType.RAW: "R",
+            EdgeType.EASED: "E",
+            EdgeType.FINISHED: "F",
+            EdgeType.MITER: "M",
+        }.get(edge_type, "-")
+
+    def _edge_compact(self, part: Part) -> str:
+        em = {e.position: e.edge_type for e in part.edges}
+        parts = []
+        for pos, letter in (
+            (Position.BACK, "B"),
+            (Position.FRONT, "F"),
+            (Position.LEFT, "L"),
+            (Position.RIGHT, "R"),
+        ):
+            et = em.get(pos)
+            parts.append(f"{letter}={self._edge_letter(et) if et else '-'}")
+        return " ".join(parts)
+
+    def _cutout_compact(self, part: Part) -> str:
+        if not part.cutouts:
+            return "—"
+        co = part.cutouts[0]
+        ctype = co.cutout_type.value.replace("_", " ").title()
+        return f"{ctype[:8]} {co.dimensions.length:.0f}x{co.dimensions.depth:.0f}"
+
+    def _draw_compact_fab_table(
+        self, c, asm: Assembly, x: float, y: float, w: float, h: float
+    ):
+        c.setFillColor(HexColor("#eef2f7"))
+        c.setStrokeColor(HexColor("#94a3b8"))
+        c.setLineWidth(0.5)
+        c.rect(x, y, w, h, fill=1, stroke=1)
+
+        cols = [("PART", 28), ("SIZE", 118), ("EDGE", 200), ("CUTOUT", 90), ("SQFT", 42)]
+        cx = x + 4
+        ty = y + h - 12
+        c.setFillColor(_C_DARK)
+        c.setFont("Helvetica-Bold", 6.5)
+        for title, cw in cols:
+            c.drawString(cx, ty, title)
+            cx += cw
+
+        row_y = ty - 10
+        c.setFont("Helvetica", 6)
+        for i, part in enumerate(asm.parts[:8]):
+            if row_y < y + 6:
+                break
+            pl = chr(65 + i)
+            dims = part.dimensions
+            area = dims.length * dims.depth / 144.0
+            dim_s = f'{format_dimension_inch_mm(dims.length)} x {format_dimension_inch_mm(dims.depth)}'
+            vals = [pl, dim_s, self._edge_compact(part), self._cutout_compact(part), f"{area:.1f}"]
+            cx = x + 4
+            for (_, cw), val in zip(cols, vals):
+                c.drawString(cx, row_y, str(val)[: int(cw / 4.5)])
+                cx += cw
+            row_y -= 9
+
+    def _draw_short_notes(self, c, asm: Assembly, x: float, y: float, w: float):
+        c.setFont("Helvetica", 6)
+        c.setFillColor(_C_GREY)
+        note = ""
+        if asm.notes:
+            note = asm.notes[0].content[:120]
+        c.drawString(x + 4, y + 8, f"NOTES: {note or 'Verify field dimensions before fabrication.'}")
 
     def _draw_notes_column(
         self, c, asm: Assembly, top_y: float, avail_h: float

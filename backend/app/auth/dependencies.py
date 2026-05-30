@@ -133,3 +133,15 @@ def get_current_tenant(
         detail="Tenant context required. Provide 'X-Tenant-ID' header or valid Bearer token.",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def get_optional_tenant(
+    x_tenant_id: Optional[str] = Header(default=None, description="Legacy tenant UUID for join-existing flows"),
+) -> Optional[uuid.UUID]:
+    """Optional tenant header — used only for legacy register-into-existing-tenant."""
+    if not x_tenant_id:
+        return None
+    try:
+        return uuid.UUID(x_tenant_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid X-Tenant-ID format. Must be a valid UUID.")

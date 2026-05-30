@@ -29,5 +29,10 @@ class InMemoryUserRepository(UserRepository):
                 return user
         return None
 
+    def get_by_email_global(self, email: str) -> Optional[User]:
+        needle = email.lower()
+        matches = [u for u in self._store.values() if u.email.lower() == needle]
+        return matches[0] if matches else None
+
     def list_by_tenant(self, tenant_id: uuid.UUID) -> List[User]:
         return [u for u in self._store.values() if u.tenant_id == tenant_id]
