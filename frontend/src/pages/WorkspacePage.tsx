@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { projectsApi } from '../api/projects';
-import { Project, ProjectStatus } from '../types/hierarchy';
+import { Project } from '../types/hierarchy';
 import { HierarchyPanel } from '../components/HierarchyPanel';
 import { AssembliesPanel } from '../components/AssembliesPanel';
 import { PackagesPanel } from '../components/PackagesPanel';
