@@ -149,9 +149,9 @@ test.describe('Phase 18 UX Redesign', () => {
 
     await page.screenshot({ path: 'e2e-screenshots/p18-home-command-center.png', fullPage: true });
 
-    // Click "Review Shop Drawings" quick action → should navigate to Shop Drawings
+    // Click "Review Shop Drawings" quick action → should navigate to Shop Drawings tab
     await page.getByText(/Review Shop Drawings/i).click();
-    await expect(page.getByText(/Shop Drawings/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Shop Drawings', exact: true })).toBeVisible();
 
     await page.screenshot({ path: 'e2e-screenshots/p18-shop-drawings-nav.png', fullPage: false });
 
