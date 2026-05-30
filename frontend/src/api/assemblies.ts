@@ -28,8 +28,16 @@ export const assembliesApi = {
     const res = await client.post(`/assemblies/${assemblyId}/duplicate`, data);
     return res.data;
   },
+  /** Authenticated fetch — img tags cannot send Bearer tokens. */
+  fetchSvgPreviewBlobUrl: async (assemblyId: string): Promise<string> => {
+    const res = await client.get(`/assemblies/${assemblyId}/preview/svg`, {
+      responseType: 'text',
+    });
+    const blob = new Blob([res.data], { type: 'image/svg+xml' });
+    return URL.createObjectURL(blob);
+  },
   getSvgPreviewUrl: (assemblyId: string): string => {
     const baseUrl = client.defaults.baseURL || API_BASE_URL;
     return `${baseUrl}/assemblies/${assemblyId}/preview/svg`;
-  }
+  },
 };

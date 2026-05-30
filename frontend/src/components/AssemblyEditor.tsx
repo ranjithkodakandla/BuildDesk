@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Assembly, Part, PartType, Position, EdgeType } from '../types/fabrication';
 import { assembliesApi } from '../api/assemblies';
 
@@ -12,6 +12,29 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
   const [asm, setAsm] = useState<Assembly>(initialAsm);
   const [loading, setLoading] = useState(false);
   const [svgUrl, setSvgUrl] = useState('');
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const svgBlobRef = useRef<string | null>(null);
+
+  const revokePreview = useCallback(() => {
+    if (svgBlobRef.current) {
+      URL.revokeObjectURL(svgBlobRef.current);
+      svgBlobRef.current = null;
+    }
+  }, []);
+
+  const loadPreview = useCallback(async (assemblyId: string) => {
+    try {
+      setPreviewError(null);
+      revokePreview();
+      const url = await assembliesApi.fetchSvgPreviewBlobUrl(assemblyId);
+      svgBlobRef.current = url;
+      setSvgUrl(url);
+    } catch (e) {
+      console.error(e);
+      setSvgUrl('');
+      setPreviewError('Could not load drawing preview.');
+    }
+  }, [revokePreview]);
 
   // Fetch full assembly details to ensure we have all nested data
   useEffect(() => {
@@ -19,11 +42,14 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
       if (initialAsm.assembly_id) {
         const full = await assembliesApi.getAssembly(initialAsm.assembly_id);
         setAsm(full);
-        setSvgUrl(assembliesApi.getSvgPreviewUrl(initialAsm.assembly_id));
+        if (full.parts?.length) {
+          await loadPreview(initialAsm.assembly_id);
+        }
       }
     };
     fetchFull();
-  }, [initialAsm.assembly_id]);
+    return () => revokePreview();
+  }, [initialAsm.assembly_id, loadPreview, revokePreview]);
 
   const handleSave = async () => {
     if (!asm.assembly_id) return;
@@ -40,7 +66,7 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
         notes: asm.notes,
       });
       setAsm(updated);
-      setSvgUrl(`${assembliesApi.getSvgPreviewUrl(asm.assembly_id)}?t=${Date.now()}`);
+      await loadPreview(asm.assembly_id);
       onSaved();
     } catch (e) {
       console.error(e);
@@ -120,11 +146,13 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
                 <span className="text-gray-400">Phase 4 Engine</span>
               </div>
               <div className="flex-1 overflow-auto flex items-center justify-center p-4">
-                <img src={svgUrl} alt="Assembly Preview" className="max-w-full max-h-full object-contain" />
+                <img src={svgUrl} alt="Assembly drawing preview" className="max-w-full max-h-full object-contain" />
               </div>
             </div>
           ) : (
-            <div className="text-gray-400 font-medium">Save assembly to generate preview</div>
+            <div className="text-gray-400 font-medium text-center px-6">
+              {previewError || (asm.parts.length === 0 ? 'Add parts and save to generate preview' : 'Loading preview…')}
+            </div>
           )}
         </div>
       </div>

@@ -1,0 +1,41 @@
+{
+  "projectName": "Haven On Main New",
+  "clientName": "Virgin Surfaces",
+  "material": "3CM Granite",
+  "jobNumber": "101",
+  "unitCode": "1A-ADA",
+  "drawing": "101-01",
+  "unitTypeCode": "1A-ADA-101-01",
+  "unitTypeName": "1A-ADA · Sheet 101-01",
+  "assemblyName": "Haven — 1A-ADA — 101-01",
+  "parts": [
+    {
+      "partNum": "101-01-01",
+      "partType": "Kitchen - Island Tops",
+      "length": 98.5,
+      "depth": 42.0,
+      "edges": "T:Polished, B:Polished, L:Polished, R:Polished"
+    },
+    {
+      "partNum": "101-01-02",
+      "partType": "Kitchen - Perimeter Tops",
+      "length": 75.0,
+      "depth": 25.5,
+      "edges": "T:None, B:Polished, L:Polished, R:Polished"
+    },
+    {
+      "partNum": "101-01-A",
+      "partType": "Kitchen - Back Splash",
+      "length": 75.0,
+      "depth": 4.0,
+      "edges": "T:Polished, B:None, L:Polished, R:Polished"
+    },
+    {
+      "partNum": "101-01-B",
+      "partType": "Kitchen - Side Splash",
+      "length": 22.0,
+      "depth": 4.0,
+      "edges": "T:Polished, B:None, L:Polished, R:Polished"
+    }
+  ]
+}
