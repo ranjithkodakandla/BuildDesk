@@ -1,0 +1,17 @@
+{
+  "reference_sheet": "100-01",
+  "reference_title": "BULL OUTDOOR Splashes (3 sides Polish) \u2014 Colonial White",
+  "tenant_id": "7b314e43-ccdb-4fc1-881e-c1fefa4993ec",
+  "email": "bull_ref_72617f0f@builddesk.accept",
+  "password": "BullOutdoorRef123!",
+  "project_id": "25f0e0b0-68ff-4046-9e6d-c2ba87de43f5",
+  "unit_type_id": "245c0380-979e-4eff-88b6-c0201c08fff1",
+  "assembly_id": "d004f9d2-2804-4633-bf7b-a0592794741b",
+  "package_id": "5e04c43b-747a-4012-991a-b68a8ada8c86",
+  "storage_reference": "gs://builddesk-artifacts-stonedesk-app/projects/25f0e0b0-68ff-4046-9e6d-c2ba87de43f5/packages/5e04c43b-747a-4012-991a-b68a8ada8c86.pdf",
+  "generation_seconds": 8.62,
+  "pdf_bytes": 11546,
+  "pdf_path": "/Users/ranjithkodakandla/Downloads/Virgin Surfaces/project/buildesk/BuildDesk/artifacts/reference-validation/builddesk_bull_outdoor_100-01.pdf",
+  "frontend_workspace_url": "https://builddesk-web-149130710868.us-central1.run.app/projects/25f0e0b0-68ff-4046-9e6d-c2ba87de43f5",
+  "api_base": "https://builddesk-api-149130710868.us-central1.run.app"
+}

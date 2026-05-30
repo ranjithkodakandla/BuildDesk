@@ -61,10 +61,11 @@ _FOOTER_H = 0.32 * inch
 _BODY_Y   = _FOOTER_H + _M        # bottom of body zone
 _BODY_H   = _H - _HEADER_H - _FOOTER_H - _M * 2
 
-# Phase 17 — drawing-first assembly sheets (full width)
-_ASM_STRIP_H = 0.30 * inch
-_ASM_TABLE_H = 0.95 * inch
-_ASM_NOTES_H = 0.24 * inch
+# Phase 18 — drawing-dominant assembly sheets
+_ASM_STRIP_H  = 0.46 * inch   # taller title strip (was 0.30)
+_ASM_TABLE_H  = 0.88 * inch   # compact fab table
+_ASM_NOTES_H  = 0.22 * inch   # short notes strip
+_VTITLE_W     = 0.82 * inch   # vertical title block on right margin
 
 # Legacy two-column (cover/summary only)
 _DRAW_FRAC = 0.61
@@ -188,77 +189,99 @@ class PackagePdfExporter:
             c.setFont("Helvetica", 5.5)
             c.drawCentredString(logo_x + 0.575 * inch, logo_y + 0.11 * inch, "configured")
 
-        # Metadata table (left column)
-        meta = [
+        # Metadata — 2-column compact grid
+        meta_left = [
             ("Project",     project.name),
             ("Client",      project.client_name or "—"),
             ("Material",    project.material    or "—"),
             ("Address",     project.address     or "—"),
+        ]
+        meta_right = [
             ("Issue Date",  project.issue_date.strftime("%B %d, %Y") if project.issue_date else package.generated_at.strftime("%B %d, %Y") if package.generated_at else "—"),
-            ("Proj Status", project.status.value.replace("_", " ").title()),
-            ("Pkg Status",  package.status.value.replace("_", " ").upper()),
+            ("Status",      project.status.value.replace("_", " ").title()),
+            ("Package",     package.status.value.replace("_", " ").upper()),
             ("Prepared By", getattr(package, "issued_by", None) or "—"),
         ]
         if package.revision_notes:
-            meta.append(("Rev Notes", package.revision_notes))
-            
-        if getattr(package, "approved_by", None):
-            meta.append(("Approved By", package.approved_by))
-            if getattr(package, "approved_at", None):
-                meta.append(("Approved At", package.approved_at.strftime("%B %d, %Y")))
-            
-        y = _H - 2.45 * inch
-        for label, value in meta:
-            c.setFont("Helvetica-Bold", 9)
-            c.setFillColor(_C_DARK)
-            c.drawString(_M, y, f"{label}:")
-            c.setFont("Helvetica", 9)
-            c.drawString(_M + 1.05 * inch, y, str(value)[:100])
-            y -= 0.27 * inch
+            meta_right.append(("Rev Notes", package.revision_notes[:40]))
 
-        # Stats band
-        y -= 0.1 * inch
-        bh = 0.58 * inch
+        col_w = (_W - 2 * _M) / 2 - 0.15 * inch
+        y = _H - 2.45 * inch
+        row_h = 0.25 * inch
+        max_rows = max(len(meta_left), len(meta_right))
+        for i in range(max_rows):
+            for col_idx, meta in enumerate([meta_left, meta_right]):
+                if i >= len(meta):
+                    continue
+                lbl, val = meta[i]
+                cx = _M + col_idx * (col_w + 0.3 * inch)
+                c.setFont("Helvetica-Bold", 8.5)
+                c.setFillColor(_C_DARK)
+                c.drawString(cx, y, f"{lbl}:")
+                c.setFont("Helvetica", 8.5)
+                c.drawString(cx + 0.85 * inch, y, str(val)[:46])
+            y -= row_h
+
+        # Stats band — larger
+        y -= 0.18 * inch
+        bh = 0.72 * inch
         c.setFillColor(_C_ACCENT)
         c.rect(_M, y - bh, _W - 2 * _M, bh, fill=1, stroke=0)
+        c.setStrokeColor(HexColor("#c8d8ea"))
+        c.setLineWidth(0.5)
+        c.rect(_M, y - bh, _W - 2 * _M, bh, fill=0, stroke=1)
+
         stats = [
-            ("Total Units",       str(summary.total_units)),
-            ("Total Assemblies",  str(summary.total_assemblies)),
-            ("Total Parts",       str(summary.total_parts)),
-            ("Total Sq Ft",       f"{summary.total_area_sqft:.1f}"),
-            ("Unit Types",        str(len(summary.unit_type_counts))),
-            ("Total Sheets",      str(self._total_pages)),
+            ("UNITS",       str(summary.total_units)),
+            ("ASSEMBLIES",  str(summary.total_assemblies)),
+            ("PARTS",       str(summary.total_parts)),
+            ("SQ FT",       f"{summary.total_area_sqft:.1f}"),
+            ("TYPES",       str(len(summary.unit_type_counts))),
+            ("SHEETS",      str(self._total_pages)),
         ]
         cw = (_W - 2 * _M) / len(stats)
         for i, (lbl, val) in enumerate(stats):
             cx = _M + i * cw + cw / 2
-            c.setFont("Helvetica-Bold", 13)
+            # divider
+            if i > 0:
+                c.setStrokeColor(HexColor("#c8d8ea"))
+                c.setLineWidth(0.4)
+                c.line(_M + i * cw, y - bh + 8, _M + i * cw, y - 8)
+            c.setFont("Helvetica-Bold", 20)
             c.setFillColor(_C_DARK)
-            c.drawCentredString(cx, y - bh * 0.45, val)
-            c.setFont("Helvetica", 7)
+            c.drawCentredString(cx, y - bh * 0.48, val)
+            c.setFont("Helvetica", 6.5)
             c.setFillColor(_C_GREY)
-            c.drawCentredString(cx, y - bh * 0.78, lbl)
+            c.drawCentredString(cx, y - bh + 10, lbl)
 
-        # Standard fabrication notes
-        notes_y = y - bh - 0.5 * inch
-        c.setFont("Helvetica-Bold", 10)
+        # Standard notes — compact 2-column
+        notes_y = y - bh - 0.32 * inch
+        c.setFont("Helvetica-Bold", 8.5)
         c.setFillColor(_C_DARK)
-        c.drawString(_M, notes_y, "STANDARD FABRICATION & INSTALLATION NOTES:")
-        c.setFont("Helvetica", 8)
-        c.setFillColor(_C_GREY)
+        c.drawString(_M, notes_y, "STANDARD FABRICATION NOTES:")
+        notes_y -= 0.18 * inch
+
         std_notes = tenant.standard_notes.split("\n") if tenant.standard_notes else [
             "1. Field verify all dimensions prior to fabrication.",
-            "2. Ensure all substrate surfaces are level and capable of supporting countertop weight.",
-            "3. Seam locations shown are suggested; actual locations to be determined by fabricator based on slab sizes.",
+            "2. All substrate surfaces must be level and structurally sound.",
+            "3. Seam locations are suggested; fabricator to confirm per slab size.",
             "4. All exposed edges to be polished unless otherwise noted.",
-            "5. Sink/cooktop cutouts must be verified against actual appliance/fixture templates.",
-            "6. Support brackets required for overhangs exceeding 10 inches."
+            "5. Cutouts must be verified against actual appliance templates.",
+            "6. Brackets required for overhangs exceeding 10 inches.",
         ]
-        ny = notes_y - 0.25 * inch
-        for note in std_notes:
-            if note.strip():
-                c.drawString(_M + 0.1 * inch, ny, note.strip())
-                ny -= 0.2 * inch
+        # render in 2 columns
+        half = (len(std_notes) + 1) // 2
+        col_note_w = (_W - 2 * _M) / 2 - 0.1 * inch
+        for idx, note in enumerate(std_notes):
+            if not note.strip():
+                continue
+            col = idx // half
+            row = idx % half
+            cx = _M + col * (col_note_w + 0.2 * inch)
+            cy = notes_y - row * 0.165 * inch
+            c.setFont("Helvetica", 7.5)
+            c.setFillColor(_C_GREY)
+            c.drawString(cx, cy, note.strip()[:72])
 
         self._footer(c, project.name, package.version, tenant)
 
@@ -335,57 +358,72 @@ class PackagePdfExporter:
         c.drawString(_M, y, group.unit_type_name)
         y -= 0.3 * inch
 
-        # Stats row
+        # Stats strip
         total_sqft = sum(
             p.dimensions.length * p.dimensions.depth / 144.0
             for a in assemblies for p in a.parts
         )
         part_count = sum(len(a.parts) for a in assemblies)
-        c.setFont("Helvetica", 9)
-        c.setFillColor(_C_GREY)
-        c.drawString(_M, y,
-                     f"Assemblies: {len(assemblies)}  ·  "
-                     f"Parts (pieces): {part_count}  ·  "
-                     f"Stone area: {total_sqft:.1f} sq ft")
-        y -= 0.3 * inch
+        y -= 0.05 * inch
 
-        # Unit list
-        c.setFont("Helvetica-Bold", 9)
+        stat_items = [
+            ("Units",       str(group.unit_count)),
+            ("Assemblies",  str(len(assemblies))),
+            ("Parts",       str(part_count)),
+            ("Stone Sq Ft", f"{total_sqft:.1f}"),
+            ("Assembly Types", str(len(group.assembly_types))),
+        ]
+        stat_bh = 0.56 * inch
+        c.setFillColor(_C_ACCENT)
+        c.rect(_M, y - stat_bh, _W - 2 * _M, stat_bh, fill=1, stroke=0)
+        scw = (_W - 2 * _M) / len(stat_items)
+        for i, (slbl, sval) in enumerate(stat_items):
+            scx = _M + i * scw + scw / 2
+            c.setFont("Helvetica-Bold", 16)
+            c.setFillColor(_C_DARK)
+            c.drawCentredString(scx, y - stat_bh * 0.46, sval)
+            c.setFont("Helvetica", 6.5)
+            c.setFillColor(_C_GREY)
+            c.drawCentredString(scx, y - stat_bh + 9, slbl.upper())
+        y -= stat_bh + 0.22 * inch
+
+        # Unit list — chip-style grid
+        c.setFont("Helvetica-Bold", 8.5)
         c.setFillColor(_C_DARK)
-        c.drawString(_M, y, f"Units ({group.unit_count}):")
-        y -= 0.22 * inch
-        max_w = _W - 2 * _M
-        line = ""
+        c.drawString(_M, y, f"UNIT NUMBERS ({group.unit_count}):")
+        y -= 0.20 * inch
+
+        chip_w, chip_h, chip_gap = 0.48 * inch, 0.18 * inch, 0.04 * inch
+        cx_start, cx = _M, _M
         for code in group.unit_codes:
-            test = line + ("" if not line else ",  ") + code
-            if c.stringWidth(test, "Helvetica", 8) < max_w:
-                line = test
-            else:
-                c.setFont("Helvetica", 8)
-                c.setFillColor(_C_GREY)
-                c.drawString(_M + 6, y, line + ",")
-                y -= 0.18 * inch
-                line = code
-        if line:
-            c.setFont("Helvetica", 8)
-            c.setFillColor(_C_GREY)
-            c.drawString(_M + 6, y, line)
-            y -= 0.25 * inch
+            if cx + chip_w > _W - _M:
+                cx = cx_start
+                y -= chip_h + chip_gap
+            c.setFillColor(HexColor("#eef2f7"))
+            c.setStrokeColor(HexColor("#94a3b8"))
+            c.setLineWidth(0.3)
+            c.rect(cx, y - chip_h, chip_w, chip_h, fill=1, stroke=1)
+            c.setFont("Helvetica", 6.5)
+            c.setFillColor(_C_DARK)
+            c.drawCentredString(cx + chip_w / 2, y - chip_h + 4, code[:8])
+            cx += chip_w + chip_gap
+        y -= chip_h + 0.22 * inch
 
-        # Assembly types
-        y -= 0.08 * inch
-        c.setFont("Helvetica-Bold", 9)
-        c.setFillColor(_C_DARK)
-        c.drawString(_M, y, "Assembly Types:")
-        y -= 0.22 * inch
-        for atype in group.assembly_types:
-            c.setFont("Helvetica", 9)
-            c.drawString(_M + 8, y, f"·  {atype.replace('_', ' ').title()}")
-            y -= 0.2 * inch
-        if not group.assembly_types:
-            c.setFont("Helvetica", 9)
+        # Assembly types table
+        if group.assembly_types:
+            c.setFont("Helvetica-Bold", 8.5)
+            c.setFillColor(_C_DARK)
+            c.drawString(_M, y, "ASSEMBLY TYPES ON THIS SHEET:")
+            y -= 0.18 * inch
+            for atype in group.assembly_types:
+                c.setFont("Helvetica", 8.5)
+                c.setFillColor(_C_GREY)
+                c.drawString(_M + 8, y, f"→  {atype.replace('_', ' ').title()}")
+                y -= 0.18 * inch
+        else:
+            c.setFont("Helvetica", 8.5)
             c.setFillColor(_C_GREY)
-            c.drawString(_M + 8, y, "No assemblies assigned yet.")
+            c.drawString(_M, y, "No assemblies assigned to this unit type.")
 
         if tenant:
             self._footer(c, project.name, "—", tenant)
@@ -425,9 +463,11 @@ class PackagePdfExporter:
             c, project, group, asm, version, label, variant, strip_y, body_top
         )
 
-        draw_x = _M
-        draw_w = _W - 2 * _M
-        draw_h = strip_y - draw_bot - 8
+        # Drawing zone: leave right gutter for vertical title block
+        vtitle_x = _W - _M - _VTITLE_W
+        draw_x   = _M
+        draw_w   = vtitle_x - _M - 4   # 4pt gap before title block
+        draw_h   = strip_y - draw_bot - 8
 
         c.setFillColor(HexColor("#fafbfc"))
         c.setStrokeColor(HexColor("#cbd5e1"))
@@ -438,7 +478,7 @@ class PackagePdfExporter:
         inner_w, inner_h = draw_w - 16, draw_h - 16
 
         legend_h = self._engine.draw_granite_quartz_key_notes(
-            c, inner_x + inner_w - 148, inner_y + inner_h - 2, w=140
+            c, inner_x + inner_w - 142, inner_y + inner_h - 2, w=134
         )
 
         c.setFillColor(_C_DARK)
@@ -460,35 +500,53 @@ class PackagePdfExporter:
         c.setFillColor(_C_GREY)
         c.drawString(draw_x, draw_bot - 6, "Scale: NTS  |  Dimensions in inch [mm]")
 
-        self._draw_compact_fab_table(c, asm, draw_x, table_top, draw_w, _ASM_TABLE_H)
-        self._draw_short_notes(c, asm, draw_x, body_bot, draw_w)
+        # Vertical title block (Virgin Surfaces shop-drawing style)
+        self._draw_vertical_title_block(
+            c, project, group, asm, version, tenant,
+            package_qty=group.unit_count,
+            sheet_id=f"{self._page_num}/{self._total_pages}",
+            x=vtitle_x,
+            y=draw_bot,
+            h=draw_h + 8,
+        )
+
+        self._draw_compact_fab_table(c, asm, draw_x, table_top, draw_w + _VTITLE_W + 4, _ASM_TABLE_H)
+        self._draw_short_notes(c, asm, draw_x, body_bot, draw_w + _VTITLE_W + 4)
         self._footer(c, project.name, version, tenant)
 
     def _draw_assembly_title_strip(
         self, c, project, group, asm, version, label, variant, strip_y, body_top
     ):
+        # Background
         c.setFillColor(HexColor("#1a2332"))
         c.rect(_M, strip_y, _W - 2 * _M, _ASM_STRIP_H, fill=1, stroke=0)
+
+        # Top row: primary identifier fields
+        top_y = strip_y + _ASM_STRIP_H * 0.62
         c.setFillColor(_C_WHITE)
-        c.setFont("Helvetica-Bold", 8)
+        c.setFont("Helvetica-Bold", 10)
         fields = [
-            project.name[:22],
+            project.name[:24],
             f"TYPE {group.unit_type_code}",
-            (project.material or "—")[:16],
+            (project.material or "—")[:18],
             f"QTY {group.unit_count}",
             f"Rev {version}",
             f"Sheet {self._page_num}/{self._total_pages}",
         ]
-        x = _M + 8
+        x = _M + 10
         for i, txt in enumerate(fields):
-            c.drawString(x, strip_y + 9, txt)
-            x += c.stringWidth(txt, "Helvetica-Bold", 8) + 14
+            c.drawString(x, top_y, txt)
+            x += c.stringWidth(txt, "Helvetica-Bold", 10) + 16
             if i < len(fields) - 1:
                 c.setFillColor(_C_MID)
-                c.drawString(x - 7, strip_y + 9, "|")
+                c.drawString(x - 9, top_y, "|")
                 c.setFillColor(_C_WHITE)
-        c.setFont("Helvetica", 7)
-        c.drawString(_M + 8, strip_y - 2, f"{label}{variant}  ·  {asm.name[:50]}")
+
+        # Bottom row: assembly name + type
+        bot_y = strip_y + _ASM_STRIP_H * 0.20
+        c.setFillColor(HexColor("#7aadcf"))
+        c.setFont("Helvetica", 8)
+        c.drawString(_M + 10, bot_y, f"{label}{variant}  ·  {asm.name[:60]}")
 
     @staticmethod
     def _edge_letter(edge_type: EdgeType) -> str:
@@ -719,50 +777,94 @@ class PackagePdfExporter:
         self._page_header(c, project, "PROJECT SUMMARY", version)
         y = _H - _HEADER_H - _M * 0.5
 
-        # Stats grid
-        bh = 0.62 * inch
+        # Key stats band
+        bh = 0.72 * inch
         c.setFillColor(_C_ACCENT)
         c.rect(_M, y - bh, _W - 2 * _M, bh, fill=1, stroke=0)
+        c.setStrokeColor(HexColor("#c8d8ea"))
+        c.setLineWidth(0.5)
+        c.rect(_M, y - bh, _W - 2 * _M, bh, fill=0, stroke=1)
+
         totals = [
-            ("Total Units",       str(summary.total_units)),
-            ("Total Assemblies",  str(summary.total_assemblies)),
-            ("Total Parts",       str(summary.total_parts)),
-            ("Stone Area (sq ft)", f"{summary.total_area_sqft:.2f}"),
-            ("Stone Area (sq in)", f"{summary.total_area_sqin:.0f}"),
+            ("UNITS",       str(summary.total_units)),
+            ("ASSEMBLIES",  str(summary.total_assemblies)),
+            ("PARTS",       str(summary.total_parts)),
+            ("SQ FT",       f"{summary.total_area_sqft:.2f}"),
+            ("SQ IN",       f"{summary.total_area_sqin:.0f}"),
         ]
         cw = (_W - 2 * _M) / len(totals)
         for i, (lbl, val) in enumerate(totals):
             cx = _M + i * cw + cw / 2
-            c.setFont("Helvetica-Bold", 17)
+            if i > 0:
+                c.setStrokeColor(HexColor("#c8d8ea"))
+                c.setLineWidth(0.4)
+                c.line(_M + i * cw, y - bh + 10, _M + i * cw, y - 10)
+            c.setFont("Helvetica-Bold", 20)
             c.setFillColor(_C_DARK)
-            c.drawCentredString(cx, y - bh * 0.44, val)
-            c.setFont("Helvetica", 7)
+            c.drawCentredString(cx, y - bh * 0.48, val)
+            c.setFont("Helvetica", 6.5)
             c.setFillColor(_C_GREY)
-            c.drawCentredString(cx, y - bh * 0.77, lbl)
-        y -= bh + 0.18 * inch
+            c.drawCentredString(cx, y - bh + 11, lbl)
 
-        # Three columns: assembly types | unit types | part types
-        col_w = (_W - 2 * _M) / 3
-        cols = [
-            ("Assembly Breakdown",
-             [(k.replace("_", " ").title(), v)
-              for k, v in sorted(summary.assembly_counts.items())]),
-            ("Unit Type Breakdown",
-             [(f"Type {k}", v) for k, v in sorted(summary.unit_type_counts.items())]),
-            ("Part Type Breakdown",
-             [(k.replace("_", " ").title(), v)
-              for k, v in sorted(summary.part_counts_by_type.items())]),
+        y -= bh + 0.28 * inch
+
+        # Three breakdown tables side-by-side
+        col_w = (_W - 2 * _M) / 3 - 0.08 * inch
+        col_gap = 0.12 * inch
+
+        breakdown_cols = [
+            ("ASSEMBLY BREAKDOWN",   sorted(summary.assembly_counts.items()),   "Assembly Type",  "Count"),
+            ("UNIT TYPE BREAKDOWN",  sorted(summary.unit_type_counts.items()),   "Unit Type",      "Count"),
+            ("PART TYPE BREAKDOWN",  sorted(summary.part_counts_by_type.items()), "Part Type",    "Count"),
         ]
-        for ci, (heading, rows) in enumerate(cols):
-            cx = _M + ci * col_w
-            c.setFont("Helvetica-Bold", 9)
+
+        for ci, (heading, rows, col1_hdr, col2_hdr) in enumerate(breakdown_cols):
+            cx = _M + ci * (col_w + col_gap)
+            th = 0.24 * inch
+
+            # Table header
             c.setFillColor(_C_DARK)
-            c.drawString(cx, y, heading)
-            ry = y - 0.2 * inch
-            for label, cnt in rows:
-                c.setFont("Helvetica", 8)
-                c.drawString(cx + 5, ry, f"·  {label}: {cnt}")
-                ry -= 0.18 * inch
+            c.rect(cx, y - th, col_w, th, fill=1, stroke=0)
+            c.setFillColor(_C_WHITE)
+            c.setFont("Helvetica-Bold", 8)
+            c.drawString(cx + 5, y - th + 8, heading)
+
+            # Column sub-headers
+            row_h = 0.185 * inch
+            sub_y = y - th - row_h
+            c.setFillColor(HexColor("#eef2f7"))
+            c.rect(cx, sub_y, col_w, row_h, fill=1, stroke=0)
+            c.setFillColor(_C_DARK)
+            c.setFont("Helvetica-Bold", 7)
+            c.drawString(cx + 5, sub_y + 5, col1_hdr)
+            c.drawRightString(cx + col_w - 5, sub_y + 5, col2_hdr)
+
+            # Data rows
+            ry = sub_y - row_h
+            for i, (k, v) in enumerate(rows):
+                label = k.replace("_", " ").title()
+                if label.lower().startswith("type ") is False and ci == 1:
+                    label = f"Type {k}"
+                bg = HexColor("#fafbfc") if i % 2 == 0 else _C_WHITE
+                c.setFillColor(bg)
+                c.rect(cx, ry, col_w, row_h, fill=1, stroke=0)
+                c.setStrokeColor(HexColor("#e2e8f0"))
+                c.setLineWidth(0.3)
+                c.line(cx, ry, cx + col_w, ry)
+                c.setFillColor(_C_DARK)
+                c.setFont("Helvetica", 7.5)
+                c.drawString(cx + 5, ry + 5, label[:32])
+                c.setFont("Helvetica-Bold", 7.5)
+                c.drawRightString(cx + col_w - 5, ry + 5, str(v))
+                ry -= row_h
+                if ry < _M + 0.5 * inch:
+                    break
+
+            # Outer border
+            table_h = y - th - ry
+            c.setStrokeColor(HexColor("#94a3b8"))
+            c.setLineWidth(0.5)
+            c.rect(cx, ry, col_w, table_h, fill=0, stroke=1)
 
         self._footer(c, project.name, version, tenant)
 

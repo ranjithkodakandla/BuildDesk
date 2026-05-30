@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Assembly, Part, PartType, Position, EdgeType } from '../types/fabrication';
+import {
+  Assembly, Part, PartType, Position, EdgeType,
+  CutoutType, MountType, Cutout, Hole, SplashType, Splash,
+} from '../types/fabrication';
 import { assembliesApi } from '../api/assemblies';
 
 interface Props {
@@ -13,6 +16,7 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
   const [loading, setLoading] = useState(false);
   const [svgUrl, setSvgUrl] = useState('');
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [selectedPartIdx, setSelectedPartIdx] = useState<number | null>(null);
   const svgBlobRef = useRef<string | null>(null);
 
   const revokePreview = useCallback(() => {
@@ -36,7 +40,6 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
     }
   }, [revokePreview]);
 
-  // Fetch full assembly details to ensure we have all nested data
   useEffect(() => {
     const fetchFull = async () => {
       if (initialAsm.assembly_id) {
@@ -76,82 +79,139 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
   };
 
   const addPart = () => {
-    setAsm({
-      ...asm,
-      parts: [
-        ...asm.parts,
-        {
-          part_type: PartType.MAIN_TOP,
-          name: `Part ${String.fromCharCode(65 + asm.parts.length)}`,
-          dimensions: { length: 60, depth: 25.5 },
-          edges: [],
-          cutouts: [],
-          holes: [],
-          splashes: []
-        }
-      ]
-    });
+    const idx = asm.parts.length;
+    const newPart: Part = {
+      part_type: PartType.MAIN_TOP,
+      name: `Part ${String.fromCharCode(65 + idx)}`,
+      dimensions: { length: 60, depth: 25.5 },
+      edges: [],
+      cutouts: [],
+      holes: [],
+      splashes: [],
+    };
+    setAsm({ ...asm, parts: [...asm.parts, newPart] });
+    setSelectedPartIdx(idx);
+  };
+
+  const updatePart = (idx: number, updated: Part) => {
+    const parts = [...asm.parts];
+    parts[idx] = updated;
+    setAsm({ ...asm, parts });
+  };
+
+  const removePart = (idx: number) => {
+    const parts = [...asm.parts];
+    parts.splice(idx, 1);
+    setAsm({ ...asm, parts });
+    setSelectedPartIdx(null);
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-140px)]">
-      <div className="border-b px-6 py-4 flex justify-between items-center bg-gray-50">
-        <div className="flex items-center space-x-4">
-          <button onClick={onBack} className="text-gray-500 hover:text-gray-900 font-medium">← Back</button>
-          <h2 className="text-lg font-bold">Edit Assembly: {asm.name}</h2>
-          <span className="bg-blue-100 text-blue-800 px-2 py-1 text-xs rounded uppercase font-bold">{asm.assembly_type}</span>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 140px)' }}>
+      {/* Editor header */}
+      <div className="border-b px-6 py-3 flex justify-between items-center bg-gray-50 rounded-t-xl">
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="text-gray-500 hover:text-gray-900 text-sm font-medium">
+            ← Back
+          </button>
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Editing: {asm.name}</h2>
+            <p className="text-xs text-gray-400 capitalize">{asm.assembly_type.replace(/_/g, ' ')} · {asm.parts.length} part{asm.parts.length !== 1 ? 's' : ''}</p>
+          </div>
         </div>
-        <button onClick={handleSave} disabled={loading} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-bold shadow-sm disabled:opacity-50">
-          {loading ? 'Saving...' : 'Save Assembly'}
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow-sm disabled:opacity-50 transition"
+        >
+          {loading ? 'Saving…' : 'Save Assembly'}
         </button>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left pane: Data Editor */}
-        <div className="w-1/2 overflow-y-auto border-r p-6 space-y-6 bg-gray-50">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-gray-900 text-lg">Parts Configuration</h3>
-            <button onClick={addPart} className="text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1 rounded font-medium">+ Add Part</button>
+        {/* Left: parts list + selected part editor */}
+        <div className="w-1/2 flex flex-col border-r overflow-hidden">
+          {/* Parts list */}
+          <div className="border-b bg-gray-50 px-4 py-2 flex items-center justify-between">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Parts</p>
+            <button
+              onClick={addPart}
+              className="text-sm bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1 rounded-lg font-medium"
+            >
+              + Add Part
+            </button>
           </div>
 
           {asm.parts.length === 0 ? (
-            <p className="text-gray-500 text-sm">No parts defined. Add a part to begin.</p>
+            <div className="flex-1 flex items-center justify-center text-center p-6">
+              <div>
+                <p className="text-gray-400 font-medium mb-2">No parts defined</p>
+                <p className="text-xs text-gray-300 mb-3">Add a part to start defining the shop drawing.</p>
+                <button
+                  onClick={addPart}
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg"
+                >
+                  Add First Part
+                </button>
+              </div>
+            </div>
           ) : (
-            asm.parts.map((part, idx) => (
-              <PartEditor 
-                key={idx} 
-                part={part} 
-                partIndex={idx}
-                onChange={(newPart) => {
-                  const newParts = [...asm.parts];
-                  newParts[idx] = newPart;
-                  setAsm({ ...asm, parts: newParts });
-                }}
-                onRemove={() => {
-                  const newParts = [...asm.parts];
-                  newParts.splice(idx, 1);
-                  setAsm({ ...asm, parts: newParts });
-                }}
-              />
-            ))
+            <>
+              {/* Part selector tabs */}
+              <div className="flex gap-1 px-3 pt-2 border-b border-gray-100 bg-white overflow-x-auto">
+                {asm.parts.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedPartIdx(i)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-t-lg shrink-0 transition ${
+                      selectedPartIdx === i
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {String.fromCharCode(65 + i)}: {p.name.slice(0, 10)}
+                  </button>
+                ))}
+              </div>
+
+              {/* Selected part editor */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {selectedPartIdx === null ? (
+                  <p className="text-sm text-gray-400 text-center mt-8">Select a part tab to edit</p>
+                ) : (
+                  <PartEditor
+                    part={asm.parts[selectedPartIdx]}
+                    partIndex={selectedPartIdx}
+                    onChange={(updated) => updatePart(selectedPartIdx, updated)}
+                    onRemove={() => removePart(selectedPartIdx)}
+                  />
+                )}
+              </div>
+            </>
           )}
         </div>
 
-        {/* Right pane: Live SVG Preview */}
-        <div className="w-1/2 bg-[#eef2f7] flex items-center justify-center p-6 overflow-hidden">
+        {/* Right: SVG preview */}
+        <div className="w-1/2 bg-slate-100 flex items-center justify-center p-6 overflow-hidden">
           {svgUrl ? (
-            <div className="bg-white shadow-lg border w-full h-full flex flex-col">
-              <div className="bg-gray-800 text-white px-3 py-2 text-xs font-mono font-bold flex justify-between">
-                <span>Fabrication Drawing Preview</span>
-                <span className="text-gray-400">Phase 4 Engine</span>
+            <div className="bg-white shadow-md border border-gray-200 w-full h-full flex flex-col rounded-lg overflow-hidden">
+              <div className="bg-slate-800 text-white px-4 py-2 text-xs font-bold flex justify-between items-center">
+                <span>Fabrication Drawing</span>
+                <span className="text-slate-400 text-xs">Save to refresh</span>
               </div>
               <div className="flex-1 overflow-auto flex items-center justify-center p-4">
-                <img src={svgUrl} alt="Assembly drawing preview" className="max-w-full max-h-full object-contain" />
+                <img
+                  src={svgUrl}
+                  alt="Assembly drawing"
+                  className="max-w-full max-h-full object-contain"
+                />
               </div>
             </div>
           ) : (
             <div className="text-gray-400 font-medium text-center px-6">
-              {previewError || (asm.parts.length === 0 ? 'Add parts and save to generate preview' : 'Loading preview…')}
+              {previewError || (asm.parts.length === 0
+                ? 'Add parts and save to generate drawing'
+                : 'Save to update drawing preview')}
             </div>
           )}
         </div>
@@ -160,80 +220,463 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
   );
 };
 
-// --- Part Editor Component ---
-const PartEditor = ({ part, partIndex, onChange, onRemove }: { part: Part, partIndex: number, onChange: (p: Part) => void, onRemove: () => void }) => {
-  const updateDim = (field: 'length' | 'depth', val: number) => {
-    onChange({ ...part, dimensions: { ...part.dimensions, [field]: val }});
+// ─── Part Editor ─────────────────────────────────────────────────────────────
+
+const PartEditor = ({
+  part, partIndex, onChange, onRemove,
+}: {
+  part: Part;
+  partIndex: number;
+  onChange: (p: Part) => void;
+  onRemove: () => void;
+}) => {
+  const [activeSection, setActiveSection] = useState<'dims' | 'edges' | 'cutouts' | 'holes' | 'splashes'>('dims');
+
+  const updateDim = (field: 'length' | 'depth' | 'thickness', val: number) => {
+    onChange({ ...part, dimensions: { ...part.dimensions, [field]: val } });
   };
 
+  // --- Edges ---
   const addEdge = () => {
-    onChange({
-      ...part,
-      edges: [...part.edges, { position: Position.FRONT, edge_type: EdgeType.EASED }]
-    });
+    onChange({ ...part, edges: [...part.edges, { position: Position.FRONT, edge_type: EdgeType.EASED }] });
+  };
+  const updateEdge = (i: number, field: string, val: string) => {
+    const edges = [...part.edges];
+    edges[i] = { ...edges[i], [field]: val };
+    onChange({ ...part, edges });
+  };
+  const removeEdge = (i: number) => {
+    const edges = [...part.edges];
+    edges.splice(i, 1);
+    onChange({ ...part, edges });
   };
 
-  const updateEdge = (idx: number, field: string, val: any) => {
-    const newEdges = [...part.edges];
-    newEdges[idx] = { ...newEdges[idx], [field]: val };
-    onChange({ ...part, edges: newEdges });
+  // --- Cutouts ---
+  const addCutout = () => {
+    const newCutout: Cutout = {
+      cutout_type: CutoutType.SINK,
+      mount_type: MountType.UNDERMOUNT,
+      dimensions: { length: 24, depth: 18 },
+      center_x: part.dimensions.length / 2,
+      center_y: part.dimensions.depth / 2,
+    };
+    onChange({ ...part, cutouts: [...part.cutouts, newCutout] });
+  };
+  const updateCutout = (i: number, field: string, val: string | number) => {
+    const cutouts = [...part.cutouts];
+    cutouts[i] = { ...cutouts[i], [field]: val };
+    onChange({ ...part, cutouts });
+  };
+  const updateCutoutDim = (i: number, field: 'length' | 'depth', val: number) => {
+    const cutouts = [...part.cutouts];
+    cutouts[i] = { ...cutouts[i], dimensions: { ...cutouts[i].dimensions, [field]: val } };
+    onChange({ ...part, cutouts });
+  };
+  const removeCutout = (i: number) => {
+    const cutouts = [...part.cutouts];
+    cutouts.splice(i, 1);
+    onChange({ ...part, cutouts });
   };
 
-  const removeEdge = (idx: number) => {
-    const newEdges = [...part.edges];
-    newEdges.splice(idx, 1);
-    onChange({ ...part, edges: newEdges });
+  // --- Holes ---
+  const addHole = () => {
+    const newHole: Hole = {
+      diameter: 1.5,
+      center_x: part.dimensions.length / 2,
+      center_y: part.dimensions.depth / 2,
+      purpose: 'Faucet',
+    };
+    onChange({ ...part, holes: [...part.holes, newHole] });
   };
+  const updateHole = (i: number, field: string, val: string | number) => {
+    const holes = [...part.holes];
+    holes[i] = { ...holes[i], [field]: val };
+    onChange({ ...part, holes });
+  };
+  const removeHole = (i: number) => {
+    const holes = [...part.holes];
+    holes.splice(i, 1);
+    onChange({ ...part, holes });
+  };
+
+  // --- Splashes ---
+  const addSplash = () => {
+    const newSplash: Splash = {
+      splash_type: SplashType.BACKSPLASH,
+      dimensions: { length: part.dimensions.length, depth: 4 },
+    };
+    onChange({ ...part, splashes: [...part.splashes, newSplash] });
+  };
+  const updateSplash = (i: number, field: string, val: string | number) => {
+    const splashes = [...part.splashes];
+    splashes[i] = { ...splashes[i], [field]: val };
+    onChange({ ...part, splashes });
+  };
+  const updateSplashDim = (i: number, field: 'length' | 'depth', val: number) => {
+    const splashes = [...part.splashes];
+    splashes[i] = { ...splashes[i], dimensions: { ...splashes[i].dimensions, [field]: val } };
+    onChange({ ...part, splashes });
+  };
+  const removeSplash = (i: number) => {
+    const splashes = [...part.splashes];
+    splashes.splice(i, 1);
+    onChange({ ...part, splashes });
+  };
+
+  const sections = [
+    { id: 'dims' as const, label: 'Dimensions', count: 0 },
+    { id: 'edges' as const, label: 'Edges', count: part.edges.length },
+    { id: 'cutouts' as const, label: 'Cutouts', count: part.cutouts.length },
+    { id: 'holes' as const, label: 'Holes', count: part.holes.length },
+    { id: 'splashes' as const, label: 'Splashes', count: part.splashes.length },
+  ];
 
   return (
-    <div className="bg-white p-4 rounded border shadow-sm">
-      <div className="flex justify-between items-center mb-3">
-        <h4 className="font-bold text-md text-gray-800">Part {String.fromCharCode(65 + partIndex)}</h4>
-        <button onClick={onRemove} className="text-red-500 hover:text-red-700 text-sm font-medium">Remove</button>
+    <div className="space-y-3">
+      {/* Part header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-bold text-gray-800">
+            Part {String.fromCharCode(65 + partIndex)}
+          </p>
+        </div>
+        <button onClick={onRemove} className="text-red-500 hover:text-red-700 text-xs font-medium">
+          Remove
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Name</label>
-          <input type="text" value={part.name} onChange={e => onChange({...part, name: e.target.value})} className="w-full border p-1.5 text-sm rounded bg-gray-50" />
+          <label className="block text-xs font-bold text-gray-600 mb-1">Name</label>
+          <input
+            type="text"
+            value={part.name}
+            onChange={(e) => onChange({ ...part, name: e.target.value })}
+            className="w-full border border-gray-300 p-1.5 text-sm rounded-lg"
+          />
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Type</label>
-          <select value={part.part_type} onChange={e => onChange({...part, part_type: e.target.value as PartType})} className="w-full border p-1.5 text-sm rounded bg-gray-50">
-            {Object.values(PartType).map(t => <option key={t} value={t}>{t}</option>)}
+          <label className="block text-xs font-bold text-gray-600 mb-1">Type</label>
+          <select
+            value={part.part_type}
+            onChange={(e) => onChange({ ...part, part_type: e.target.value as PartType })}
+            className="w-full border border-gray-300 p-1.5 text-sm rounded-lg bg-white"
+          >
+            {Object.values(PartType).map((t) => (
+              <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+            ))}
           </select>
         </div>
-        <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Length (in)</label>
-          <input type="number" step="0.1" value={part.dimensions.length} onChange={e => updateDim('length', parseFloat(e.target.value) || 0)} className="w-full border p-1.5 text-sm rounded bg-gray-50" />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">Depth (in)</label>
-          <input type="number" step="0.1" value={part.dimensions.depth} onChange={e => updateDim('depth', parseFloat(e.target.value) || 0)} className="w-full border p-1.5 text-sm rounded bg-gray-50" />
-        </div>
       </div>
 
-      {/* Edges */}
-      <div className="mb-4 bg-gray-50 p-3 rounded border">
-        <div className="flex justify-between items-center mb-2">
-          <h5 className="font-bold text-sm text-gray-700">Edges</h5>
-          <button onClick={addEdge} className="text-xs text-blue-600 hover:underline">+ Add Edge</button>
-        </div>
-        {part.edges.map((e, i) => (
-          <div key={i} className="flex space-x-2 mb-2 items-center">
-            <select value={e.position} onChange={ev => updateEdge(i, 'position', ev.target.value)} className="flex-1 border p-1 text-xs rounded">
-              {Object.values(Position).map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
-            </select>
-            <select value={e.edge_type} onChange={ev => updateEdge(i, 'edge_type', ev.target.value)} className="flex-1 border p-1 text-xs rounded">
-              {Object.values(EdgeType).map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}
-            </select>
-            <button onClick={() => removeEdge(i)} className="text-red-500 text-lg leading-none">×</button>
-          </div>
+      {/* Section tabs */}
+      <div className="flex gap-1 flex-wrap">
+        {sections.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setActiveSection(s.id)}
+            className={`px-2.5 py-1 text-xs font-medium rounded-lg transition ${
+              activeSection === s.id
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {s.label}{s.count > 0 ? ` (${s.count})` : ''}
+          </button>
         ))}
       </div>
-      
-      {/* Note: Cutouts, Holes, Splashes would follow similar UI patterns here. Keeping it concise for the artifact. */}
-      <p className="text-xs text-gray-400 italic mt-2">Cutouts, Holes, and Splashes can be configured similarly.</p>
+
+      {/* Dimensions */}
+      {activeSection === 'dims' && (
+        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Length (in)</label>
+              <input
+                type="number"
+                step="0.125"
+                value={part.dimensions.length}
+                onChange={(e) => updateDim('length', parseFloat(e.target.value) || 0)}
+                className="w-full border border-gray-300 p-1.5 text-sm rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Depth (in)</label>
+              <input
+                type="number"
+                step="0.125"
+                value={part.dimensions.depth}
+                onChange={(e) => updateDim('depth', parseFloat(e.target.value) || 0)}
+                className="w-full border border-gray-300 p-1.5 text-sm rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Thickness (in)</label>
+              <input
+                type="number"
+                step="0.125"
+                value={part.dimensions.thickness ?? ''}
+                placeholder="3CM"
+                onChange={(e) => updateDim('thickness', parseFloat(e.target.value) || 0)}
+                className="w-full border border-gray-300 p-1.5 text-sm rounded-lg"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-600 mb-1">Notes</label>
+            <input
+              type="text"
+              value={part.notes || ''}
+              onChange={(e) => onChange({ ...part, notes: e.target.value })}
+              placeholder="e.g., verify field dimensions before cut"
+              className="w-full border border-gray-300 p-1.5 text-sm rounded-lg"
+            />
+          </div>
+          <p className="text-xs text-gray-400">
+            Area: {(part.dimensions.length * part.dimensions.depth / 144).toFixed(2)} sq ft
+          </p>
+        </div>
+      )}
+
+      {/* Edges */}
+      {activeSection === 'edges' && (
+        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+          <div className="flex justify-between items-center">
+            <p className="text-xs font-bold text-gray-600">Edge Treatments</p>
+            <button onClick={addEdge} className="text-xs text-indigo-600 hover:underline font-medium">
+              + Add Edge
+            </button>
+          </div>
+          {part.edges.length === 0 && (
+            <p className="text-xs text-gray-400">No edges defined. Add an edge treatment for exposed edges.</p>
+          )}
+          {part.edges.map((e, i) => (
+            <div key={i} className="flex gap-2 items-center bg-white rounded-lg p-2 border border-gray-200">
+              <select
+                value={e.position}
+                onChange={(ev) => updateEdge(i, 'position', ev.target.value)}
+                className="flex-1 border border-gray-300 p-1 text-xs rounded-lg bg-white"
+              >
+                {Object.values(Position).map((p) => (
+                  <option key={p} value={p}>{p.toUpperCase()}</option>
+                ))}
+              </select>
+              <select
+                value={e.edge_type}
+                onChange={(ev) => updateEdge(i, 'edge_type', ev.target.value)}
+                className="flex-1 border border-gray-300 p-1 text-xs rounded-lg bg-white"
+              >
+                {Object.values(EdgeType).map((t) => (
+                  <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+              <button onClick={() => removeEdge(i)} className="text-red-500 text-sm font-bold w-5 text-center">×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Cutouts */}
+      {activeSection === 'cutouts' && (
+        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+          <div className="flex justify-between items-center">
+            <p className="text-xs font-bold text-gray-600">Cutouts (Sinks / Cooktops)</p>
+            <button onClick={addCutout} className="text-xs text-indigo-600 hover:underline font-medium">
+              + Add Cutout
+            </button>
+          </div>
+          {part.cutouts.length === 0 && (
+            <p className="text-xs text-gray-400">No cutouts. Add sink or cooktop openings.</p>
+          )}
+          {part.cutouts.map((co, i) => (
+            <div key={i} className="bg-white rounded-lg p-3 border border-gray-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-gray-700">Cutout {i + 1}</p>
+                <button onClick={() => removeCutout(i)} className="text-red-500 text-xs font-medium">Remove</button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Type</label>
+                  <select
+                    value={co.cutout_type}
+                    onChange={(e) => updateCutout(i, 'cutout_type', e.target.value)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg bg-white"
+                  >
+                    {Object.values(CutoutType).map((t) => (
+                      <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Mount</label>
+                  <select
+                    value={co.mount_type}
+                    onChange={(e) => updateCutout(i, 'mount_type', e.target.value)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg bg-white"
+                  >
+                    {Object.values(MountType).map((t) => (
+                      <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Length (in)</label>
+                  <input
+                    type="number" step="0.25"
+                    value={co.dimensions.length}
+                    onChange={(e) => updateCutoutDim(i, 'length', parseFloat(e.target.value) || 0)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Depth (in)</label>
+                  <input
+                    type="number" step="0.25"
+                    value={co.dimensions.depth}
+                    onChange={(e) => updateCutoutDim(i, 'depth', parseFloat(e.target.value) || 0)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Center X (in)</label>
+                  <input
+                    type="number" step="0.25"
+                    value={co.center_x}
+                    onChange={(e) => updateCutout(i, 'center_x', parseFloat(e.target.value) || 0)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Center Y (in)</label>
+                  <input
+                    type="number" step="0.25"
+                    value={co.center_y}
+                    onChange={(e) => updateCutout(i, 'center_y', parseFloat(e.target.value) || 0)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Holes */}
+      {activeSection === 'holes' && (
+        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+          <div className="flex justify-between items-center">
+            <p className="text-xs font-bold text-gray-600">Holes (Faucet / Drain)</p>
+            <button onClick={addHole} className="text-xs text-indigo-600 hover:underline font-medium">
+              + Add Hole
+            </button>
+          </div>
+          {part.holes.length === 0 && (
+            <p className="text-xs text-gray-400">No holes. Add faucet or drain holes.</p>
+          )}
+          {part.holes.map((h, i) => (
+            <div key={i} className="bg-white rounded-lg p-3 border border-gray-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-gray-700">Hole {i + 1}</p>
+                <button onClick={() => removeHole(i)} className="text-red-500 text-xs font-medium">Remove</button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Purpose</label>
+                  <input
+                    type="text"
+                    value={h.purpose}
+                    onChange={(e) => updateHole(i, 'purpose', e.target.value)}
+                    placeholder="Faucet"
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Diameter (in)</label>
+                  <input
+                    type="number" step="0.125"
+                    value={h.diameter}
+                    onChange={(e) => updateHole(i, 'diameter', parseFloat(e.target.value) || 0)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Center X (in)</label>
+                  <input
+                    type="number" step="0.25"
+                    value={h.center_x}
+                    onChange={(e) => updateHole(i, 'center_x', parseFloat(e.target.value) || 0)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Center Y (in)</label>
+                  <input
+                    type="number" step="0.25"
+                    value={h.center_y}
+                    onChange={(e) => updateHole(i, 'center_y', parseFloat(e.target.value) || 0)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Splashes */}
+      {activeSection === 'splashes' && (
+        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+          <div className="flex justify-between items-center">
+            <p className="text-xs font-bold text-gray-600">Splash Bands</p>
+            <button onClick={addSplash} className="text-xs text-indigo-600 hover:underline font-medium">
+              + Add Splash
+            </button>
+          </div>
+          {part.splashes.length === 0 && (
+            <p className="text-xs text-gray-400">No splashes. Add backsplash or side-splash.</p>
+          )}
+          {part.splashes.map((sp, i) => (
+            <div key={i} className="bg-white rounded-lg p-3 border border-gray-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-gray-700">Splash {i + 1}</p>
+                <button onClick={() => removeSplash(i)} className="text-red-500 text-xs font-medium">Remove</button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Type</label>
+                  <select
+                    value={sp.splash_type}
+                    onChange={(e) => updateSplash(i, 'splash_type', e.target.value)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg bg-white"
+                  >
+                    {Object.values(SplashType).map((t) => (
+                      <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Length (in)</label>
+                  <input
+                    type="number" step="0.25"
+                    value={sp.dimensions.length}
+                    onChange={(e) => updateSplashDim(i, 'length', parseFloat(e.target.value) || 0)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Height (in)</label>
+                  <input
+                    type="number" step="0.25"
+                    value={sp.dimensions.depth}
+                    onChange={(e) => updateSplashDim(i, 'depth', parseFloat(e.target.value) || 0)}
+                    className="w-full border border-gray-300 p-1 text-xs rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
