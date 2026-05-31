@@ -117,9 +117,6 @@ class AssemblySvgExporter:
             elems.append(
                 f'<line x1="{sx:.1f}" y1="{y1:.1f}" x2="{sx:.1f}" y2="{y2:.1f}" '
                 f'stroke="{_SEAM_COL}" stroke-width="2" stroke-dasharray="5,3"/>'
-                f'<text x="{sx:.1f}" y="{(y1+y2)/2:.1f}" '
-                f'text-anchor="middle" font-size="7" fill="{_SEAM_COL}" '
-                f'font-family="monospace" dominant-baseline="middle">SEAM</text>'
             )
 
         # Edge legend
@@ -365,10 +362,22 @@ class AssemblySvgExporter:
             f'stroke="{_DIM_COL}" stroke-width="0.6"/>'
             f'<line x1="{x:.1f}" y1="{dy:.1f}" x2="{x + pw:.1f}" y2="{dy:.1f}" '
             f'stroke="{_DIM_COL}" stroke-width="1.2"/>'
-            f'<line x1="{x:.1f}" y1="{dy - 3:.1f}" x2="{x:.1f}" y2="{dy + 3:.1f}" '
-            f'stroke="{_DIM_COL}" stroke-width="1.2"/>'
-            f'<line x1="{x + pw:.1f}" y1="{dy - 3:.1f}" x2="{x + pw:.1f}" y2="{dy + 3:.1f}" '
-            f'stroke="{_DIM_COL}" stroke-width="1.2"/>'
+        )
+        # Arrowhead at left end (points right)
+        elems.append(
+            f'<line x1="{x:.1f}" y1="{dy:.1f}" x2="{x + 7:.1f}" y2="{dy - 3.5:.1f}" '
+            f'stroke="{_DIM_COL}" stroke-width="0.9"/>'
+            f'<line x1="{x:.1f}" y1="{dy:.1f}" x2="{x + 7:.1f}" y2="{dy + 3.5:.1f}" '
+            f'stroke="{_DIM_COL}" stroke-width="0.9"/>'
+        )
+        # Arrowhead at right end (points left)
+        elems.append(
+            f'<line x1="{x + pw:.1f}" y1="{dy:.1f}" x2="{x + pw - 7:.1f}" y2="{dy - 3.5:.1f}" '
+            f'stroke="{_DIM_COL}" stroke-width="0.9"/>'
+            f'<line x1="{x + pw:.1f}" y1="{dy:.1f}" x2="{x + pw - 7:.1f}" y2="{dy + 3.5:.1f}" '
+            f'stroke="{_DIM_COL}" stroke-width="0.9"/>'
+        )
+        elems.append(
             f'<text x="{x + pw/2:.1f}" y="{dy + 12:.1f}" text-anchor="middle" '
             f'font-size="9" fill="{_DIM_COL}" font-family="monospace" '
             f'font-weight="600">{length}"</text>'
@@ -382,10 +391,22 @@ class AssemblySvgExporter:
             f'stroke="{_DIM_COL}" stroke-width="0.6"/>'
             f'<line x1="{rx:.1f}" y1="{y:.1f}" x2="{rx:.1f}" y2="{y + ph:.1f}" '
             f'stroke="{_DIM_COL}" stroke-width="1.2"/>'
-            f'<line x1="{rx - 3:.1f}" y1="{y:.1f}" x2="{rx + 3:.1f}" y2="{y:.1f}" '
-            f'stroke="{_DIM_COL}" stroke-width="1.2"/>'
-            f'<line x1="{rx - 3:.1f}" y1="{y + ph:.1f}" x2="{rx + 3:.1f}" y2="{y + ph:.1f}" '
-            f'stroke="{_DIM_COL}" stroke-width="1.2"/>'
+        )
+        # Arrowhead at bottom end (points up — SVG y-down means tip is smaller y)
+        elems.append(
+            f'<line x1="{rx:.1f}" y1="{y + ph:.1f}" x2="{rx - 3.5:.1f}" y2="{y + ph - 7:.1f}" '
+            f'stroke="{_DIM_COL}" stroke-width="0.9"/>'
+            f'<line x1="{rx:.1f}" y1="{y + ph:.1f}" x2="{rx + 3.5:.1f}" y2="{y + ph - 7:.1f}" '
+            f'stroke="{_DIM_COL}" stroke-width="0.9"/>'
+        )
+        # Arrowhead at top end (points down)
+        elems.append(
+            f'<line x1="{rx:.1f}" y1="{y:.1f}" x2="{rx - 3.5:.1f}" y2="{y + 7:.1f}" '
+            f'stroke="{_DIM_COL}" stroke-width="0.9"/>'
+            f'<line x1="{rx:.1f}" y1="{y:.1f}" x2="{rx + 3.5:.1f}" y2="{y + 7:.1f}" '
+            f'stroke="{_DIM_COL}" stroke-width="0.9"/>'
+        )
+        elems.append(
             f'<text x="{rx + 12:.1f}" y="{y + ph/2:.1f}" text-anchor="middle" '
             f'font-size="9" fill="{_DIM_COL}" font-family="monospace" font-weight="600" '
             f'transform="rotate(-90 {rx + 12:.1f} {y + ph/2:.1f})">{depth}"</text>'

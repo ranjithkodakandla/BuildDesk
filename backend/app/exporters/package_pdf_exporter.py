@@ -108,18 +108,19 @@ class PackagePdfExporter:
         c = canvas.Canvas(buf, pagesize=_PAGE)
         c.setTitle(f"BuildDesk — {project.name} — {package.version}")
 
+        # Determine dimension style from project material string.
+        # Fabricators using fractional notation typically don't include "mm" in material names.
+        _dim_style = self._infer_dim_style(project)
+
         # Gather TOC items
         toc_items = []
 
         self._draw_cover(c, project, package, tenant, summary)
         c.showPage()
-        
+
         toc_items.append(("Cover Sheet", 1))
         toc_items.append(("Table of Contents", 2))
-        
-        # We will draw TOC later, but we must reserve a page.
-        # Actually, if we draw it now, we need to know the page numbers in advance.
-        # Let's pre-calculate the page numbers for the TOC.
+
         current_page = 3
         for group in unit_type_groups:
             toc_items.append((f"Unit Type {group.unit_type_code} - Summary", current_page))
@@ -128,12 +129,11 @@ class PackagePdfExporter:
                 toc_items.append((f"  {group.unit_type_code} - {atype.title()}", current_page))
                 current_page += 1
         toc_items.append(("Project Summary", current_page))
-        
+
         self._draw_toc(c, project, package.version, tenant, toc_items)
         c.showPage()
 
         for group in unit_type_groups:
-            # Gather assemblies for this group to compute type-sheet stats
             group_assemblies: List[Assembly] = []
             for atype in group.assembly_types:
                 key = f"{group.unit_type_id}::{atype}"
@@ -145,7 +145,10 @@ class PackagePdfExporter:
             for atype in group.assembly_types:
                 key = f"{group.unit_type_id}::{atype}"
                 asms = assemblies_by_type.get(key, [])
-                self._draw_assembly_page(c, project, group, atype, asms, package.version, tenant)
+                self._draw_assembly_page(
+                    c, project, group, atype, asms, package.version, tenant,
+                    dim_style=_dim_style,
+                )
                 c.showPage()
 
         self._draw_summary(c, project, summary, package.version, tenant)
@@ -435,18 +438,25 @@ class PackagePdfExporter:
     def _draw_assembly_page(
         self, c, project: Project,
         group: UnitTypeGroup, assembly_type: str,
-        assemblies: List[Assembly], version: str, tenant: Tenant
+        assemblies: List[Assembly], version: str, tenant: Tenant,
+        dim_style: str = "inch_mm",
     ):
-        """Phase 17 drawing-first sheet: large canvas + compact fab table."""
+        """
+        Drawing-first assembly sheet.
+
+        The drawing fills the full body — no parts table below it.
+        Unit numbers are listed at the bottom of the drawing zone
+        (matching the reference PDF convention: "UNITS: 101, 201, 301 …").
+        """
         self._page_num += 1
         label = assembly_type.replace("_", " ").title()
         variant = " [MIR]" if group.is_mirror else (" [ADA]" if group.is_ada else "")
 
         body_top = _H - _HEADER_H - _M * 0.12
         body_bot = _BODY_Y
-        table_top = body_bot + _ASM_NOTES_H
-        draw_bot = table_top + _ASM_TABLE_H + 6
-        strip_y = body_top - _ASM_STRIP_H
+        # Drawing zone extends to just above the footer — no table/notes row
+        draw_bot = body_bot + 4
+        strip_y  = body_top - _ASM_STRIP_H
 
         if not assemblies:
             self._page_header(c, project, f"TYPE {group.unit_type_code}  —  {label}{variant}", "")
@@ -457,18 +467,18 @@ class PackagePdfExporter:
             return
 
         asm = assemblies[0]
-        use_shop = asm.assembly_type.value == "custom" and len(asm.parts) >= 4
 
         self._draw_assembly_title_strip(
             c, project, group, asm, version, label, variant, strip_y, body_top
         )
 
-        # Drawing zone: leave right gutter for vertical title block
+        # Drawing zone: full width minus right title-block gutter
         vtitle_x = _W - _M - _VTITLE_W
         draw_x   = _M
-        draw_w   = vtitle_x - _M - 4   # 4pt gap before title block
+        draw_w   = vtitle_x - _M - 4
         draw_h   = strip_y - draw_bot - 8
 
+        # Drawing zone background
         c.setFillColor(HexColor("#fafbfc"))
         c.setStrokeColor(HexColor("#cbd5e1"))
         c.setLineWidth(0.6)
@@ -477,30 +487,47 @@ class PackagePdfExporter:
         inner_x, inner_y = draw_x + 8, draw_bot + 8
         inner_w, inner_h = draw_w - 16, draw_h - 16
 
+        # Key notes (top-right of drawing zone, matching reference position)
         legend_h = self._engine.draw_granite_quartz_key_notes(
             c, inner_x + inner_w - 142, inner_y + inner_h - 2, w=134
         )
 
+        # QTY label — prominent, centred at top of drawing zone
         c.setFillColor(_C_DARK)
-        c.setFont("Helvetica-Bold", 12)
-        c.drawCentredString(inner_x + inner_w / 2, inner_y + inner_h - 12, f"QTY={group.unit_count}")
+        c.setFont("Helvetica-Bold", 14)
+        c.drawCentredString(inner_x + inner_w / 2, inner_y + inner_h - 14, f"QTY={group.unit_count}")
 
+        # The actual fabrication drawing
+        # Reserve ~20 pts at bottom of inner zone for the unit list
+        unit_list_h = 18.0 if group.unit_codes else 0
         self._engine.draw_assembly(
             c=c,
             assembly=asm,
             zone_x=inner_x,
-            zone_y=inner_y,
+            zone_y=inner_y + unit_list_h,
             zone_w=inner_w,
-            zone_h=max(inner_h - legend_h - 22, 80),
+            zone_h=max(inner_h - legend_h - 22 - unit_list_h, 80),
             is_mirror=group.is_mirror,
-            shop_sheet_layout=use_shop,
+            shop_sheet_layout=False,   # two-zone auto-triggered by splash parts
+            dim_style=dim_style,
         )
 
+        # Unit numbers at the bottom of the drawing zone (reference style)
+        if group.unit_codes:
+            self._draw_unit_list_in_drawing(c, group, inner_x, inner_y, inner_w)
+
+        # Scale note just below the drawing zone (real scale ratio from last draw call)
+        from app.exporters.fabrication_drawing_engine import (
+            dim_style_label, format_scale_ratio,
+        )
+        last_scale = getattr(self._engine, '_last_scale', None)
+        scale_str  = format_scale_ratio(last_scale) if last_scale else "NTS"
         c.setFont("Helvetica-Oblique", 6)
         c.setFillColor(_C_GREY)
-        c.drawString(draw_x, draw_bot - 6, "Scale: NTS  |  Dimensions in inch [mm]")
+        c.drawString(draw_x, draw_bot - 6,
+                     f"Scale: {scale_str}  |  {dim_style_label(dim_style)}")
 
-        # Vertical title block (Virgin Surfaces shop-drawing style)
+        # Right-margin vertical title block
         self._draw_vertical_title_block(
             c, project, group, asm, version, tenant,
             package_qty=group.unit_count,
@@ -510,9 +537,27 @@ class PackagePdfExporter:
             h=draw_h + 8,
         )
 
-        self._draw_compact_fab_table(c, asm, draw_x, table_top, draw_w + _VTITLE_W + 4, _ASM_TABLE_H)
-        self._draw_short_notes(c, asm, draw_x, body_bot, draw_w + _VTITLE_W + 4)
         self._footer(c, project.name, version, tenant)
+
+    def _draw_unit_list_in_drawing(
+        self, c, group: UnitTypeGroup, x: float, y: float, w: float
+    ) -> None:
+        """
+        Render the unit number list at the bottom of the drawing zone.
+        Matches reference style: "UNITS: 101, 201, 301, 122, 222, 322"
+        """
+        codes = group.unit_codes
+        if not codes:
+            return
+
+        # First 40 codes on one line; overflow truncated with count
+        display = codes[:40]
+        suffix  = f"  +{len(codes) - 40} more" if len(codes) > 40 else ""
+        text    = "UNITS:  " + ",  ".join(display) + suffix
+
+        c.setFillColor(_C_DARK)
+        c.setFont("Helvetica-Bold", 6.5)
+        c.drawString(x + 4, y + 6, text)
 
     def _draw_assembly_title_strip(
         self, c, project, group, asm, version, label, variant, strip_y, body_top
@@ -986,3 +1031,22 @@ class PackagePdfExporter:
         if line:
             lines.append(line)
         return lines or [""]
+
+    @staticmethod
+    def _infer_dim_style(project: "Project") -> str:
+        """
+        Infer the best dimension notation style from project metadata.
+
+        Rules (in order):
+          - Material contains "mm" → long_mm  (Concord-style: "55 in [1397 mm]")
+          - Material contains "metric" → long_mm
+          - Otherwise → inch_mm  (BULL OUTDOOR default: "28.5\" [724]")
+
+        Fabricators can override per-project in the future via a project field.
+        The 'frac' style (Deforest: "23 1/4\"") is not auto-detected yet but
+        can be passed explicitly.
+        """
+        mat = (project.material or "").lower()
+        if "metric" in mat or " mm" in mat:
+            return "long_mm"
+        return "inch_mm"

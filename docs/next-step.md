@@ -1,50 +1,124 @@
 # Next Step
 
-> Auto-updated after Phase 16 consolidation. Read `docs/session-start.md` before new work.
+> Updated after Phase 19 (Geometry-Aware Drawing Composition + UX Redesign).
+> Read `docs/phase19-handoff.md` before starting new work — it contains the exact
+> pending changes with file paths, line numbers, and reasoning.
 
 ---
 
 ## Current State
 
-| Field              | Value |
-|--------------------|--------|
-| Active branch | `feat/reference-pdf-validation` — domain fidelity recovery |
-| Reference verdict | **NO-GO** — [`reference-pdf-validation.md`](./reference-pdf-validation.md) |
-| Recovery verdict | **CONDITIONAL GO** — [`domain-fidelity-recovery-report.md`](./domain-fidelity-recovery-report.md) |
-| Live API revision | `builddesk-api-00021-br6` (fabrication FK flush fix) |
-| Last completed phase | Phase 16 — Production Persistence & Launch Sign-off (consolidated) |
-| **Canonical baseline** | **`canonical-phase16`** @ `394aad4` (runtime/deploy `3425c68`) |
-| Feature branch (merged) | `feat/phase16-production-signoff` |
-| Test baseline | Backend **76 / 76** pytest; frontend **17 / 17**; build OK |
-| Live revision | `builddesk-api-00019-6p8` |
-| Live URL | `https://builddesk-api-149130710868.us-central1.run.app` |
-| GCS bucket | `builddesk-artifacts-stonedesk-app` |
-| Alembic head | `a8f1c2d3e4b5` |
-| Production verdict | **CONDITIONAL GO** |
+| Field                 | Value |
+|-----------------------|-------|
+| Active branch         | local working tree (no git) |
+| Last completed phase  | Phase 19 — Geometry-Aware Drawing + UX Redesign |
+| Test baseline         | Backend **85 / 85** pytest passing |
+| Frontend build        | TypeScript 0 errors, 107 modules |
+| Live URL              | `https://builddesk-api-149130710868.us-central1.run.app` |
+| GCS bucket            | `builddesk-artifacts-stonedesk-app` |
+| Alembic head          | `a8f1c2d3e4b5` |
 
 ---
 
-## Consolidation complete
+## What was completed in Phase 17–19 (this session)
 
-Phase 16 is locked on `canonical-phase16`. No open code blockers from Phase 15/15.5 (FK fix committed in `701b9e2`, GCS in `3425c68`).
+### Phase 17 — UX Redesign (Frontend)
+**Files changed:** `frontend/src/pages/WorkspacePage.tsx`, `OverviewPanel.tsx`,
+`HierarchyPanel.tsx`, `DashboardPage.tsx`
 
-**Before starting new work:** checkout `canonical-phase16`, run session-start protocol, read `docs/phase16-final-closeout-report.md`.
+- Tab renames: "Unit Schedule" → "Units & Types", "Package" → "PDF Package",
+  "Queue" → "Issues & RFIs"
+- Step numbers on every tab (1–5) so users always know where they are
+- Overview panel replaced abstract health tiles with a **3-step job checklist**
+  (Import & Assign → Review Drawings → Generate PDF) with direct action buttons
+- "Generate Fabrication PDF" hero button appears when all steps are green
+- PDF-ready state shows green "Open / Download PDF" card
+- HierarchyPanel redesigned:
+  - Unassigned units shown at TOP with amber warning + "Select All" button
+  - Inline quick-assign dropdown on each unassigned unit chip
+  - Unit chips enlarged (min-h 40px, text-sm) for tablet use
+  - Always-visible "Add Stone Type" sidebar (was hidden in "Tools ▼" dropdown)
+  - Progress bar showing X of Y units assigned
+  - Search box to filter units
+  - "Generate Units" form always visible in sidebar
+- Dashboard: "New Project" → "New Job", cleaner project cards with status dot
+
+### Phase 18 — PDF Drawing Composition Engine (Backend)
+**Files changed:** `backend/app/exporters/fabrication_drawing_engine.py`
+
+- **Two-zone layout**: thin parts (depth ≤ 5.5") drawn as separate stone rectangles
+  in TOP zone; main countertop pieces in BOTTOM zone
+- **Width-matched alignment**: each BS/SS piece horizontally centred above the main
+  top whose width most closely matches it (greedy matching)
+- **Layout trigger**: two-zone auto-triggers whenever assembly has BOTH splash parts
+  AND main tops — regardless of total part count (was `len(parts) >= 3`)
+- **Scale bug fixed**: `min(scale_w, scale_h)` — was using `max()` (wrong)
+- **Scale cap raised**: 8.0 → 12.0 pts/inch so single-piece assemblies fill zone
+- **Vertical centering**: parts centred within available zone height
+- **L-shape detection**: checks `LEFT_RETURN`/`RIGHT_RETURN` PartTypes;
+  draws "L-CORNER" annotation at seam junction
+- **Seam lines**: only between adjacent main-top parts, not across BS pieces
+- `_is_splash_part(part)`: depth ≤ 5.5" → splash
+- `_get_splash_label(part)`: BS / L-SS / R-SS / SS from part name
+- `_draw_splash_piece_edges()`: polished top/left/right, raw dashed bottom
+
+### Phase 19 — Dimension Formats + PDF Table Removal (Backend)
+**Files changed:** `backend/app/exporters/fabrication_drawing_engine.py`,
+`backend/app/exporters/package_pdf_exporter.py`
+
+**4 dimension styles now supported:**
+- `DIM_INCH_MM`  → `28.5" [724]`   (BULL OUTDOOR / default)
+- `DIM_FRAC`     → `28 1/2"`        (Deforest Yards US CAD style)
+- `DIM_LONG_MM`  → `28.5 in [724 mm]` (Concord North style)
+- `DIM_DECIMAL`  → `28.5"`          (simple)
+
+All styles propagate to width, depth, AND cutout location dimensions.
+`fmt_dim(value, style)` dispatcher used everywhere — no format mismatch.
+
+**PDF table removed:**  The `PART / SIZE / EDGE / CUTOUT / SQFT` compact fab table
+that appeared below every assembly drawing has been removed. Drawing zone expanded by
+~85 pts (the reclaimed table height). Zero parts table in any reference PDF.
+
+**Unit list at bottom of drawing zone:**  `UNITS: 101, 201, 301, 122, 222, 322`
+matches Deforest/Haven reference style.
+
+**`_infer_dim_style(project)`:**  Auto-selects style from project material string
+("metric"/"mm" keywords → `long_mm`, otherwise `inch_mm`).
 
 ---
 
-## Remaining operational items (not code blockers)
+## Next pending work — PDF Visual Overhaul
 
-| Item | Owner |
-|------|--------|
-| Manual browser sign-off (`docs/phase16-browser-validation.md`) | Operator |
-| Production frontend origin in `ALLOWED_ORIGINS` | When static app is hosted |
-| GCS lifecycle/retention policy | Ops |
-| Full-fidelity load test (300+ units, dense drawings) | Optional pre-SLA |
+**See `docs/phase19-handoff.md` for exact implementation plan.**
+
+Summary:
+1. Black-and-white drawing style (remove color fill, use line weight only)
+2. Proper arrowhead dimension lines
+3. Real scale calculation and notation
+4. (Later) Inline piece editor in Shop Drawings tab
+5. (Later) Building/floor unit schedule table on drawings
 
 ---
 
-## Reference docs
+## Key file locations
 
-- `docs/phase16-final-closeout-report.md` — consolidation & readiness matrix
-- `docs/phase16-production-signoff-report.md` — Phase 16 implementation sign-off
-- `docs/phase16-browser-validation.md` — operator browser checklist
+```
+backend/app/exporters/fabrication_drawing_engine.py  ← drawing primitives
+backend/app/exporters/package_pdf_exporter.py        ← multi-page PDF layout
+frontend/src/pages/WorkspacePage.tsx                 ← tab structure
+frontend/src/pages/DashboardPage.tsx                 ← project list
+frontend/src/components/OverviewPanel.tsx            ← job checklist
+frontend/src/components/HierarchyPanel.tsx           ← unit management
+frontend/src/components/PackagesPanel.tsx            ← PDF generate/download
+frontend/src/components/AssembliesPanel.tsx          ← shop drawings view
+```
+
+## How to verify before any new work
+
+```bash
+cd backend
+.venv/bin/python -m pytest tests/ -q     # must be 85/85
+
+cd ../frontend
+npm run build                             # must be 0 TypeScript errors
+```
