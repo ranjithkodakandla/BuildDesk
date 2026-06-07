@@ -27,6 +27,8 @@ from app.api.exports import router as exports_router
 from app.api.rfis import router as rfis_router
 from app.api.search import router as search_router
 from app.api.tenants import router as tenants_router
+from app.api.templates import router as templates_router
+from app.api.matrix import router as matrix_router
 from app.config import get_settings
 from app.startup_checks import has_blocking_errors, log_startup_checks, run_startup_checks
 
@@ -110,6 +112,9 @@ def create_app() -> FastAPI:
     # Phase 14: Search
     application.include_router(search_router,    prefix="/api/v1", tags=["search"])
     application.include_router(tenants_router,   prefix="/api/v1", tags=["tenant"])
+    # Phase 4: Template-Driven Fabrication API
+    application.include_router(templates_router, prefix="/api/v1", tags=["templates"])
+    application.include_router(matrix_router,   prefix="/api/v1", tags=["matrix"])
     # Legacy geometry endpoints (deprecated, kept for backward compatibility)
     application.include_router(shapes_router,    prefix="/api/v1", tags=["shapes (legacy)"])
     application.include_router(geometry_router,  prefix="/api/v1", tags=["geometry (legacy)"])

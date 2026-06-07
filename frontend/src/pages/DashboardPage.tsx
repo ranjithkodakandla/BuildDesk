@@ -41,12 +41,15 @@ export const DashboardPage: React.FC = () => {
   const [newClient, setNewClient]       = useState('');
   const [newMaterial, setNewMaterial]   = useState('');
   const [newAddress, setNewAddress]     = useState('');
+  const [newJobNumber, setNewJobNumber] = useState('');
+  const [newThickness, setNewThickness] = useState('3CM');
   const [creating, setCreating]         = useState(false);
   const navigate = useNavigate();
   const { logout, user } = useAuthStore();
 
   const openCreate = () => {
     setNewName(''); setNewClient(''); setNewMaterial(''); setNewAddress('');
+    setNewJobNumber(''); setNewThickness('3CM');
     setShowCreateModal(true);
   };
 
@@ -54,11 +57,17 @@ export const DashboardPage: React.FC = () => {
     if (!newName.trim()) return;
     setCreating(true);
     try {
+      // Store job_number + thickness in description as JSON so PDF can read them
+      const extraMeta = JSON.stringify({
+        job_number: newJobNumber.trim(),
+        thickness:  newThickness,
+      });
       const proj = await projectsApi.createProject({
         name:         newName.trim(),
         client_name:  newClient.trim()   || undefined,
         material:     newMaterial.trim() || undefined,
         address:      newAddress.trim()  || undefined,
+        description:  extraMeta,
         status:       ProjectStatus.DRAFT,
         hierarchy_config: { has_buildings: false, has_floors: false, has_unit_types: true },
       });
@@ -83,33 +92,33 @@ export const DashboardPage: React.FC = () => {
   const archived = projects.filter((p) => p.status === ProjectStatus.ARCHIVED);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-gray-200 px-6 py-0">
-        <div className="flex items-center justify-between h-14 max-w-7xl mx-auto w-full">
+      <header className="bg-white border-b border-[#e2e8f0] px-6 py-0">
+        <div className="flex items-center justify-between h-12 max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-sm shrink-0">
-              <span className="text-white font-black text-sm">B</span>
+            <div className="w-7 h-7 rounded bg-[#1e293b] flex items-center justify-center shrink-0">
+              <span className="text-white font-bold text-xs">B</span>
             </div>
             <div>
-              <h1 className="text-base font-bold text-gray-900 leading-none">BuildDesk</h1>
-              <p className="text-xs text-gray-400 leading-none mt-0.5">Countertop Fabrication</p>
+              <h1 className="text-sm font-bold text-[#1e293b] leading-none">BuildDesk</h1>
+              <p className="text-[10px] text-[#94a3b8] leading-none mt-0.5">Countertop Fabrication</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {user?.email && (
-              <span className="text-xs text-gray-400 hidden md:block">{user.email}</span>
+              <span className="text-xs text-[#94a3b8] hidden md:block">{user.email}</span>
             )}
             <button
               onClick={openCreate}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition shadow-sm"
+              className="btn-primary text-xs px-3 py-1.5"
             >
               + New Job
             </button>
             <button
               onClick={logout}
-              className="px-3 py-2 border border-gray-200 text-gray-500 text-sm rounded-xl hover:bg-gray-50 transition"
+              className="px-3 py-1.5 border border-[#e2e8f0] text-[#475569] text-xs rounded hover:bg-[#f8fafc] transition"
             >
               Sign out
             </button>
@@ -118,16 +127,16 @@ export const DashboardPage: React.FC = () => {
       </header>
 
       {/* ── Nav ─────────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200 px-6">
-        <div className="max-w-7xl mx-auto flex gap-1">
+      <div className="bg-white border-b border-[#e2e8f0] px-6">
+        <div className="max-w-7xl mx-auto flex gap-0">
           {NAV.map((v) => (
             <button
               key={v.id}
               onClick={() => setActiveView(v.id)}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-4 py-3 text-xs font-medium border-b-2 transition-colors ${
                 activeView === v.id
-                  ? 'border-indigo-500 text-indigo-700'
-                  : 'border-transparent text-gray-500 hover:text-gray-800'
+                  ? 'border-[#1e293b] text-[#1e293b]'
+                  : 'border-transparent text-[#64748b] hover:text-[#334155]'
               }`}
             >
               {v.label}
@@ -137,7 +146,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-5 md:p-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-5">
 
         {activeView === 'search' && (
           <SearchPanel onOpenProject={(id) => navigate(`/projects/${id}`)} />
@@ -149,13 +158,13 @@ export const DashboardPage: React.FC = () => {
 
         {activeView === 'projects' && (
           loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
-              {[1, 2, 3].map((i) => <div key={i} className="h-44 bg-gray-100 rounded-2xl" />)}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 animate-pulse">
+              {[1, 2, 3].map((i) => <div key={i} className="h-36 bg-[#f1f5f9] rounded" />)}
             </div>
           ) : projects.length === 0 ? (
             <EmptyState onCreate={openCreate} />
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {active.length > 0 && (
                 <ProjectGroup
                   title="Active Jobs"
@@ -184,12 +193,12 @@ export const DashboardPage: React.FC = () => {
 
       {/* ── Create modal ─────────────────────────────────────────────────── */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-xl font-black text-gray-900 mb-1">New Fabrication Job</h3>
-            <p className="text-sm text-gray-500 mb-5">Fill in the job details — you can edit these later.</p>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded border border-[#e2e8f0] p-5 w-full max-w-sm shadow-xl">
+            <h3 className="text-sm font-bold text-[#1e293b] mb-1">New Fabrication Job</h3>
+            <p className="text-xs text-[#64748b] mb-4">Fill in the job details — you can edit these later.</p>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <Field label="Job / Project Name *" hint="e.g. Haven On Main Phase 2">
                 <input
                   data-testid="create-project-name"
@@ -199,7 +208,7 @@ export const DashboardPage: React.FC = () => {
                   onKeyDown={(e) => e.key === 'Enter' && newName.trim() && handleCreate()}
                   placeholder="Haven On Main Phase 2"
                   autoFocus
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  className="input-field"
                 />
               </Field>
               <Field label="Builder / Client" hint="Who is this job for?">
@@ -209,34 +218,58 @@ export const DashboardPage: React.FC = () => {
                   value={newClient}
                   onChange={(e) => setNewClient(e.target.value)}
                   placeholder="Meritage Homes"
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  className="input-field"
                 />
               </Field>
-              <Field label="Material" hint="Stone type or colour">
-                <input
-                  data-testid="create-project-material"
-                  type="text"
-                  value={newMaterial}
-                  onChange={(e) => setNewMaterial(e.target.value)}
-                  placeholder="3CM Calacatta Gold Quartz"
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-              </Field>
-              <Field label="Site Address">
-                <input
-                  type="text"
-                  value={newAddress}
-                  onChange={(e) => setNewAddress(e.target.value)}
-                  placeholder="1234 Main St, Phoenix AZ"
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Material Color" hint="e.g. Black Pearl">
+                  <input
+                    data-testid="create-project-material"
+                    type="text"
+                    value={newMaterial}
+                    onChange={(e) => setNewMaterial(e.target.value)}
+                    placeholder="Black Pearl"
+                    className="input-field"
+                  />
+                </Field>
+                <Field label="Thickness">
+                  <select
+                    value={newThickness}
+                    onChange={e => setNewThickness(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="2CM">2CM (3/4")</option>
+                    <option value="3CM">3CM (1-1/4")</option>
+                    <option value="2CM & 3CM">2CM &amp; 3CM (mixed)</option>
+                  </select>
+                </Field>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Job / PO Number" hint="e.g. 1041">
+                  <input
+                    type="text"
+                    value={newJobNumber}
+                    onChange={(e) => setNewJobNumber(e.target.value)}
+                    placeholder="1041"
+                    className="input-field"
+                  />
+                </Field>
+                <Field label="Location" hint="City, State">
+                  <input
+                    type="text"
+                    value={newAddress}
+                    onChange={(e) => setNewAddress(e.target.value)}
+                    placeholder="Lafayette, IN"
+                    className="input-field"
+                  />
+                </Field>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm hover:bg-gray-50 transition"
+                className="px-3 py-1.5 border border-[#e2e8f0] text-[#475569] text-xs rounded hover:bg-[#f8fafc] transition"
               >
                 Cancel
               </button>
@@ -244,7 +277,7 @@ export const DashboardPage: React.FC = () => {
                 data-testid="create-project-submit"
                 onClick={handleCreate}
                 disabled={creating || !newName.trim()}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl disabled:opacity-50 transition shadow-sm"
+                className="btn-primary text-xs px-4 py-1.5 disabled:opacity-50"
               >
                 {creating ? 'Creating…' : 'Create Job →'}
               </button>
@@ -260,9 +293,9 @@ export const DashboardPage: React.FC = () => {
 
 const Field: React.FC<{ label: string; hint?: string; children: React.ReactNode }> = ({ label, hint, children }) => (
   <div>
-    <label className="flex items-baseline gap-2 text-xs font-bold text-gray-700 mb-1.5">
+    <label className="flex items-baseline gap-2 text-xs font-medium text-[#334155] mb-1">
       {label}
-      {hint && <span className="font-normal text-gray-400">{hint}</span>}
+      {hint && <span className="font-normal text-[#94a3b8]">{hint}</span>}
     </label>
     {children}
   </div>
@@ -274,8 +307,8 @@ const ProjectGroup: React.FC<{
   onOpen: (id: string) => void;
 }> = ({ title, projects, onOpen }) => (
   <div>
-    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">{title}</p>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <p className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest mb-2.5">{title}</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
       {projects.map((p) => (
         <ProjectCard key={p.project_id} project={p} onClick={() => onOpen(p.project_id)} />
       ))}
@@ -289,46 +322,46 @@ const ProjectCard: React.FC<{ project: Project; onClick: () => void }> = ({ proj
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-300 cursor-pointer transition-all p-5 group flex flex-col"
+      className="bg-white rounded border border-[#e2e8f0] hover:border-[#94a3b8] cursor-pointer transition-all p-4 group flex flex-col"
     >
-      {/* Top row: status dot + status badge */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-0.5 ${sc.dot}`} />
-          <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full ${sc.cls}`}>{sc.label}</span>
+      {/* Top row: status badge + date */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${sc.dot}`} />
+          <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${sc.cls}`}>{sc.label}</span>
         </div>
-        <span className="text-xs text-gray-400">{relativeDate(project.created_at)}</span>
+        <span className="text-[10px] text-[#94a3b8]">{relativeDate(project.created_at)}</span>
       </div>
 
       {/* Project name */}
-      <h3 className="text-base font-black text-gray-900 group-hover:text-indigo-700 transition-colors leading-tight mb-2 truncate">
+      <h3 className="text-sm font-bold text-[#1e293b] group-hover:text-[#334155] leading-tight mb-1.5 truncate">
         {project.name}
       </h3>
 
       {/* Meta */}
-      <div className="space-y-1 flex-1">
+      <div className="space-y-0.5 flex-1">
         {project.client_name && (
-          <p className="text-sm text-gray-600">
-            <span className="text-gray-400 text-xs mr-1">Builder</span>
-            <span className="font-semibold">{project.client_name}</span>
+          <p className="text-xs text-[#475569] truncate">
+            <span className="text-[#94a3b8] mr-1">Builder</span>
+            <span className="font-medium">{project.client_name}</span>
           </p>
         )}
         {project.material && (
-          <p className="text-sm text-gray-500 truncate">{project.material}</p>
+          <p className="text-xs text-[#64748b] truncate">{project.material}</p>
         )}
         {project.address && (
-          <p className="text-xs text-gray-400 truncate">{project.address}</p>
+          <p className="text-[10px] text-[#94a3b8] truncate">{project.address}</p>
         )}
       </div>
 
       {/* Footer */}
-      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-xs text-gray-400">
+      <div className="mt-2.5 pt-2 border-t border-[#f1f5f9] flex items-center justify-between">
+        <span className="text-[10px] text-[#94a3b8]">
           {project.issue_date
             ? `Issue: ${new Date(project.issue_date).toLocaleDateString()}`
             : 'No issue date'}
         </span>
-        <span className="text-xs text-indigo-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="text-xs text-[#64748b] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
           Open →
         </span>
       </div>
@@ -337,15 +370,14 @@ const ProjectCard: React.FC<{ project: Project; onClick: () => void }> = ({ proj
 };
 
 const EmptyState: React.FC<{ onCreate: () => void }> = ({ onCreate }) => (
-  <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-16 text-center max-w-lg mx-auto">
-    <div className="text-5xl mb-4">🏗</div>
-    <h3 className="text-xl font-black text-gray-900 mb-2">No jobs yet</h3>
-    <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
+  <div className="bg-white rounded border border-dashed border-[#cbd5e1] p-12 text-center max-w-md mx-auto">
+    <h3 className="text-sm font-bold text-[#1e293b] mb-1">No jobs yet</h3>
+    <p className="text-xs text-[#64748b] mb-4 max-w-xs mx-auto">
       Create your first fabrication job to start building unit schedules and generating shop drawing packages.
     </p>
     <button
       onClick={onCreate}
-      className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow-sm"
+      className="btn-primary text-xs px-4 py-1.5"
     >
       Create First Job →
     </button>

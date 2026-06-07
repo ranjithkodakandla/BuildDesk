@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Assembly, Part, PartType, Position, EdgeType,
   CutoutType, MountType, Cutout, Hole, SplashType, Splash,
@@ -14,45 +14,120 @@ interface Props {
 export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, onSaved }) => {
   const [asm, setAsm] = useState<Assembly>(initialAsm);
   const [loading, setLoading] = useState(false);
-  const [svgUrl, setSvgUrl] = useState('');
-  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewError] = useState<string | null>(null);
   const [selectedPartIdx, setSelectedPartIdx] = useState<number | null>(null);
-  const svgBlobRef = useRef<string | null>(null);
-
-  const revokePreview = useCallback(() => {
-    if (svgBlobRef.current) {
-      URL.revokeObjectURL(svgBlobRef.current);
-      svgBlobRef.current = null;
-    }
-  }, []);
-
-  const loadPreview = useCallback(async (assemblyId: string) => {
-    try {
-      setPreviewError(null);
-      revokePreview();
-      const url = await assembliesApi.fetchSvgPreviewBlobUrl(assemblyId);
-      svgBlobRef.current = url;
-      setSvgUrl(url);
-    } catch (e) {
-      console.error(e);
-      setSvgUrl('');
-      setPreviewError('Could not load drawing preview.');
-    }
-  }, [revokePreview]);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const fetchFull = async () => {
       if (initialAsm.assembly_id) {
-        const full = await assembliesApi.getAssembly(initialAsm.assembly_id);
-        setAsm(full);
-        if (full.parts?.length) {
-          await loadPreview(initialAsm.assembly_id);
+        try {
+          const full = await assembliesApi.getAssembly(initialAsm.assembly_id);
+          setAsm(full);
+        } catch (e) {
+          console.error(e);
         }
       }
     };
     fetchFull();
-    return () => revokePreview();
-  }, [initialAsm.assembly_id, loadPreview, revokePreview]);
+  }, [initialAsm.assembly_id]);
+
+  // Live canvas preview — re-renders on every parts change (BUG A fix)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, W, H);
+
+    const parts = asm.parts ?? [];
+    if (parts.length === 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px Helvetica, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Add parts to see preview', W / 2, H / 2);
+      return;
+    }
+
+    const PAD = 36;
+    const totalW = parts.reduce((s, p) => s + p.dimensions.length, 0);
+    const maxH   = Math.max(...parts.map(p => p.dimensions.depth));
+    const scaleX = (W - PAD * 2) / Math.max(totalW, 0.001);
+    const scaleY = (H - PAD * 2) / Math.max(maxH,   0.001);
+    const scale  = Math.min(scaleX, scaleY) * 0.75;
+
+    const drawW = totalW * scale;
+    const drawH = maxH   * scale;
+    const startX = (W - drawW) / 2;
+    const startY = (H - drawH) / 2;
+
+    const EDGE_CODES: Record<string, string> = {
+      eased: 'X', bullnose: 'B', laminated_bullnose: 'LB',
+      laminated_eased: 'LE', raw: 'RAW', seam: 'S',
+    };
+
+    let cx = startX;
+    parts.forEach((part, idx) => {
+      const pw = part.dimensions.length * scale;
+      const ph = part.dimensions.depth  * scale;
+      const py = startY + (drawH - ph) / 2;
+
+      // White rect
+      ctx.strokeStyle = '#1a2332';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx, py, pw, ph);
+      ctx.strokeRect(cx, py, pw, ph);
+
+      // Part label
+      const label = String.fromCharCode(65 + idx);
+      ctx.fillStyle = '#1a2332';
+      ctx.font = `bold ${Math.min(16, ph * 0.4)}px Helvetica, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(label, cx + pw / 2, py + ph / 2 + 5);
+
+      // Edge codes
+      const edgeMap: Record<string, string> = {};
+      (part.edges ?? []).forEach(e => { edgeMap[e.position] = e.edge_type; });
+      const sides: [string, number, number][] = [
+        ['front', cx + pw / 2, py + ph],
+        ['back',  cx + pw / 2, py],
+        ['left',  cx,          py + ph / 2],
+        ['right', cx + pw,     py + ph / 2],
+      ];
+      sides.forEach(([pos, ex, ey]) => {
+        const code = EDGE_CODES[edgeMap[pos] ?? 'eased'] ?? 'X';
+        ctx.font = 'bold 7px Helvetica, sans-serif';
+        ctx.textAlign = 'center';
+        const tw = ctx.measureText(code).width + 4;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(ex - tw / 2, ey - 6, tw, 10);
+        ctx.fillStyle = '#000000';
+        ctx.fillText(code, ex, ey + 2);
+      });
+
+      // Width dim below
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([]);
+      const dimY = py + ph + 14;
+      ctx.beginPath();
+      ctx.moveTo(cx, py + ph); ctx.lineTo(cx, dimY);
+      ctx.moveTo(cx + pw, py + ph); ctx.lineTo(cx + pw, dimY);
+      ctx.moveTo(cx, dimY); ctx.lineTo(cx + pw, dimY);
+      ctx.stroke();
+      ctx.fillStyle = '#333333';
+      ctx.font = '6px Helvetica, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${part.dimensions.length}" × ${part.dimensions.depth}"`, cx + pw / 2, dimY + 9);
+
+      cx += pw;
+    });
+  }, [asm.parts]);
 
   const handleSave = async () => {
     if (!asm.assembly_id) return;
@@ -69,7 +144,6 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
         notes: asm.notes,
       });
       setAsm(updated);
-      await loadPreview(asm.assembly_id);
       onSaved();
     } catch (e) {
       console.error(e);
@@ -191,28 +265,23 @@ export const AssemblyEditor: React.FC<Props> = ({ assembly: initialAsm, onBack, 
           )}
         </div>
 
-        {/* Right: SVG preview */}
-        <div className="w-1/2 bg-slate-100 flex items-center justify-center p-6 overflow-hidden">
-          {svgUrl ? (
-            <div className="bg-white shadow-md border border-gray-200 w-full h-full flex flex-col rounded-lg overflow-hidden">
-              <div className="bg-slate-800 text-white px-4 py-2 text-xs font-bold flex justify-between items-center">
-                <span>Fabrication Drawing</span>
-                <span className="text-slate-400 text-xs">Save to refresh</span>
-              </div>
-              <div className="flex-1 overflow-auto flex items-center justify-center p-4">
-                <img
-                  src={svgUrl}
-                  alt="Assembly drawing"
-                  className="max-w-full max-h-full object-contain"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="text-gray-400 font-medium text-center px-6">
-              {previewError || (asm.parts.length === 0
-                ? 'Add parts and save to generate drawing'
-                : 'Save to update drawing preview')}
-            </div>
+        {/* Right: Live canvas preview (BUG A fix) */}
+        <div className="w-1/2 bg-slate-100 flex flex-col overflow-hidden">
+          <div className="bg-slate-800 text-white px-4 py-2 text-xs font-bold flex justify-between items-center shrink-0">
+            <span>Drawing Preview</span>
+            <span className="text-slate-400 text-xs">Live · updates as you edit</span>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-2">
+            <canvas
+              ref={canvasRef}
+              width={480}
+              height={320}
+              className="rounded bg-white shadow border border-gray-200 w-full h-full"
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            />
+          </div>
+          {previewError && (
+            <p className="text-xs text-red-500 text-center pb-2">{previewError}</p>
           )}
         </div>
       </div>
